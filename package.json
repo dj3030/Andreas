@@ -1,0 +1,27 @@
+{
+  "name": "homey-433",
+  "version": "1.0.0",
+  "description": "433 tools for Homey apps",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bas Kiers @ Athom BV",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.9.0",
+    "deep-extend": "^0.4.1",
+    "fs-extra": "^0.30.0",
+    "is-valid-path": "^0.1.1",
+    "js-beautify": "^1.6.3",
+    "traverse": "^0.6.6",
+    "upath": "^0.1.7"
+  },
+  "engines": {
+    "node": ">= 4.x"
+  },
+  "engineStrict": true,
+  "bin": {
+    "homey433": "bin/homey433"
+  }
+}

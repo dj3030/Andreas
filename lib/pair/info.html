@@ -1,0 +1,31 @@
+<link href="../../../assets/433_generator/css/svgstyle.css" rel="stylesheet" type="text/css"/>
+<script src="../../../assets/433_generator/js/svghighlighter.js" type="text/javascript"></script>
+
+<div>
+	<div id="image-container"></div>
+	<span id="body"></span>
+	<div class="foundAnimation" id="foundBackground" style="display:none;"></div>
+	<i class="fa fa-check-circle foundAnimation" id="found" style="display:none;" aria-hidden="true"></i>
+</div>
+
+<script>
+	var idPrefix = '[data-id="' + options.id + '"] ';
+	$(idPrefix + '#body').html(__(options.body));
+	$imageContainer = $(idPrefix + '#image-container');
+
+	if(options.svg) {
+		$imageContainer.html(options.svg);
+		$imageContainer.highlight();
+	}else{
+		$imageContainer.detach();
+	}
+</script>
+
+<style>
+	#image-container svg {
+		display: block;
+		margin: auto;
+		height: 70vh;
+		width: 80vw;
+	}
+</style>

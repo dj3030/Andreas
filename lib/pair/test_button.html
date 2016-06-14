@@ -1,0 +1,60 @@
+<link href="../../../assets/433_generator/css/svgstyle.css" rel="stylesheet" type="text/css"/>
+<script src="../../../assets/433_generator/js/svghighlighter.js" type="text/javascript"></script>
+
+<div>
+	<div id="image-container" class="toggle-pulse"></div>
+	<div class="onoff"></div>
+	<span id="body"></span>
+</div>
+
+<script>
+	var idPrefix = '[data-id="' + options.id + '"] ';
+	$(idPrefix + '#body').html(__(options.body));
+	$imageContainer = $(idPrefix + '#image-container');
+
+	$imageContainer.html(options.svg);
+	Homey.emit('test', function (err, device) {
+		if (err) {
+			console.log(err);
+			return;
+		}
+		$imageContainer.on('click', () => Homey.emit('toggle'));
+		$imageContainer.highlight(device);
+		Homey.emit('toggle');
+	})
+</script>
+
+<style>
+	#image-container svg {
+		display: block;
+		margin: auto;
+		height: 70vh;
+		width: 80vw;
+	}
+
+	.toggle-pulse > svg .pulse {
+		-moz-animation: toggle 0.8s infinite alternate;
+		-webkit-animation: toggle 0.8s infinite alternate;
+		-ms-animation: toggle 0.8s infinite alternate;
+		animation: toggle 0.8s infinite alternate;
+	}
+
+
+	@-webkit-keyframes toggle {
+		from {
+			fill: #FFF;
+		}
+		to {
+			fill: #000;
+		}
+	}
+
+	@keyframes toggle {
+		from {
+			fill: #FFF;
+		}
+		to {
+			fill: #000;
+		}
+	}
+</style>

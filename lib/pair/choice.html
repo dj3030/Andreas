@@ -1,0 +1,43 @@
+<link href="../../../assets/433_generator/css/svgstyle.css" rel="stylesheet" type="text/css"/>
+<script src="../../../assets/433_generator/js/svghighlighter.js" type="text/javascript"></script>
+
+<div>
+	<div id="image-container"></div>
+	<div id="button-container"></div>
+	<span id="body"></span>
+</div>
+
+<script>
+	var idPrefix = '[data-id="' + options.id + '"] ';
+	$(idPrefix + '#body').html(__(options.body));
+	$imageContainer = $(idPrefix + '#image-container');
+	$buttonContainer = $(idPrefix + '#button-container');
+
+	$imageContainer.html(options.svg);
+	options.buttons.forEach(function (button) {
+		$buttonContainer.append(
+			$('<button>')
+				.addClass('button')
+				.html(__(button.name))
+				.on('click', Homey.showView.bind(Homey, button.action))
+		);
+	});
+</script>
+
+<style>
+	#image-container svg {
+		display: block;
+		margin: auto;
+		height: 70vh;
+		width: 80vw;
+	}
+
+	#button-container {
+		text-align: center;
+	}
+
+	#button-container > button {
+		display: inline-block;
+		margin: 0 10px;
+	}
+</style>
