@@ -287,7 +287,7 @@ Svg's included in the standard templates will be highlighted by the svghighlight
 ```
 <path myClass:state="1" myClass:group="1|2" ...></path>
 ```
-with a data frame that contains `{ group: 0, address: 11010101, group:2, state:0 }` will set the class of the element to `not-myClass`. This is because although the group matches `2`, the state does not match `0`. When you want to add your own functionality you will want to add css to actually react to the class change of the svghighlighter. An example of such a custom class is given in the example below.
+with a data frame that contains `{ address: 11010101, group:2, state:0 }`. This will set the class of the element to `not-myClass`. This is because although the group condition (`1|2`) matches `2`, the state condition (`1`) does not match `0`. When you want to add your own functionality you will want to add css to actually react to the class change of the svghighlighter. An example of such a custom class is given in the example below.
 
 ```
 <?xml version="1.0" encoding="UTF-8"?>
