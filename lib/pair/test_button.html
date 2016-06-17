@@ -3,42 +3,66 @@
 
 <div>
 	<div id="image-container" class="toggle-pulse"></div>
-	<div class="onoff"></div>
-	<span id="body"></span>
+	<div id="button-container"><button id="test_button" class="button"></button></div>
+	<div id="body"><span class="content"></span></div>
 </div>
 
 <script>
 	var idPrefix = '[data-id="' + options.id + '"] ';
-	$(idPrefix + '#body').html(__(options.body));
+	$(idPrefix + '#body > span').html(__(options.body));
 	$imageContainer = $(idPrefix + '#image-container');
+	$imageContainer.css('width', options.svgWidth).css('height', options.svgHeight);
+	$testButton = $(idPrefix + '#test_button');
 
 	$imageContainer.html(options.svg);
+	$testButton.html(__(options.buttonLabel));
 	Homey.emit('test', function (err, device) {
 		if (err) {
-			console.log(err);
+			Homey.alert(__(err.message || err));
 			return;
 		}
-		$imageContainer.on('click', () => Homey.emit('toggle'));
+		$testButton.on('click', () => Homey.emit('toggle'));
 		$imageContainer.highlight(device);
 		Homey.emit('toggle');
 	})
 </script>
 
 <style>
-	#image-container svg {
-		display: block;
+	#body {
+		text-align: center;
+		margin: 1em 0;
+		font-size: 1.3em;
+	}
+
+	#button-container {
+		text-align: center;
+	}
+
+	#button-container > button {
+		display: inline-block;
+		padding: 0 3em;
+		margin: 0 10px;
+	}
+
+	#image-container {
+		display: flex;
+		align-items: center;
 		margin: auto;
 		height: 70vh;
 		width: 80vw;
 	}
 
-	.toggle-pulse > svg .pulse {
+	#image-container svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	svg .toggle {
 		-moz-animation: toggle 0.8s infinite alternate;
 		-webkit-animation: toggle 0.8s infinite alternate;
 		-ms-animation: toggle 0.8s infinite alternate;
 		animation: toggle 0.8s infinite alternate;
 	}
-
 
 	@-webkit-keyframes toggle {
 		from {

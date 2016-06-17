@@ -29,7 +29,7 @@ module.exports = class configParser {
 						this.locales[path.basename(fileName, '.json')] = require(path.join(localesPath, fileName));
 					}
 				});
-			} catch (ignore) { }
+			} catch (ignore) { return ignore; }
 		}
 		return this.locales;
 	}
@@ -246,18 +246,50 @@ module.exports = class configParser {
 					imageOptions
 				);
 				const pairOptions = deviceClassOptions.map(options => options.pair).concat(deviceClass.pair).filter(Boolean);
-				const pair = pairOptions.length === 0 ? {} : Object.assign.apply(
-					{},
-					pairOptions.concat(
-						{
-							viewOptions: deepExtend.apply(
-								deepExtend,
-								[{}].concat(deviceClassOptions.map(options => options.pair ? options.pair.viewOptions : {}))
-									.concat(deviceClass.pair ? deviceClass.pair.viewOptions : {}).filter(Boolean)
-							),
-						}
-					)
-				);
+				let pair = {};
+				if (pairOptions.length !== 0) {
+					// TODO does not work...
+					deviceClass.pair = deviceClass.pair || {};
+					deviceClass.pair.viewOptions = deviceClass.pair.viewOptions || {};
+					const pairViewOptions = [{}]
+						.concat(deviceClassOptions.map(options => options.pair ? options.pair.viewOptions : null))
+						.concat(deviceClass.pair ? deviceClass.pair.viewOptions || {} : {}).filter(Boolean);
+
+					(new Set([].concat.apply([], Object.keys(pairViewOptions).map(dc => Object.keys(pairViewOptions[dc])))))
+						.forEach(option => {
+							deviceClass.pair.viewOptions[option] = deviceClass.pair.viewOptions[option] || {};
+							['prepend', 'append'].forEach(type => {
+								if (deviceClass.pair.viewOptions[option][type] && !Array.isArray(
+										deviceClass.pair.viewOptions[option][type]
+									)
+								) {
+									deviceClass.pair.viewOptions[option][type] = [deviceClass.pair.viewOptions[option][type]];
+								} else {
+									deviceClass.pair.viewOptions[option][type] = [];
+								}
+								deviceClass.pair.viewOptions[option][type] = Object.keys(pairViewOptions).reduce((optionList, curr) => {
+									if (curr.pair && curr.pair.viewOptions && curr.pair.viewOptions[option] &&
+										curr.pair.viewOptions[option][type]
+									) {
+										return optionList.concat(curr.pair.viewOptions[option][type]);
+									}
+									return optionList;
+								}, deviceClass.pair.viewOptions[option][type]);
+							});
+						});
+					pair = Object.assign.apply(
+						{},
+						pairOptions.concat(
+							{
+								viewOptions: deepExtend.apply(
+									deepExtend,
+									[{}].concat(deviceClassOptions.map(options => options.pair ? options.pair.viewOptions : null))
+										.concat(deviceClass.pair.viewOptions).filter(Boolean)
+								),
+							}
+						)
+					);
+				}
 				deviceClassOptions = deviceClassOptions.concat([
 					globals,
 					deviceClass,
@@ -304,7 +336,10 @@ module.exports = class configParser {
 							throw new Error(`Could not find view ${viewName} for ${deviceId}`);
 						}
 						const view = Object.assign({}, this.views[viewName]);
-						const viewOptions = result[deviceId].pair.viewOptions ? result[deviceId].pair.viewOptions[viewName] || {} : {};
+						const viewOptions =
+							result[deviceId].pair.viewOptions ?
+							result[deviceId].pair.viewOptions[viewName] || {} :
+							{};
 						const optionTypes = view.options || {};
 						Object.assign(optionTypes, { prepend: {}, append: {} });
 
@@ -365,7 +400,7 @@ module.exports = class configParser {
 
 	assert(condition, message) {
 		if (!condition) {
-			console.warn('[WARNING]', message);
+			Homey.warn('[WARNING]', message);
 		}
 	}
 };

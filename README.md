@@ -5,6 +5,19 @@ This module generates driver files for Homey using a custom config file. The goa
 This generator generates files in the `/drivers`, `/drivers/lib` and `/assets/433_generator` folder. All previous files in these folders will be overwritten. Also, this generator overwrites `drivers` and `flows` in the `app.json` config. These actions cannot be undone. Use with caution!
 
 ####usage
+
+**NOTICE:[**
+Since this app is not on npm yet you will need to call the `index.js` file directly for now. This can be done by cloning it (preferrably as a sibling to your working project) using:
+`cd ..`
+`git clone https://github.com/athombv/node-homey-433.git`
+`cd my-project`
+and calling it's relative path for example:
+`node ../homey-433/index.js generate`
+**]**
+
+To install this tool run
+`npm install -g homey-433`
+
 To use this tool you need to run
 `homey433 generate [configDir] [projectDir]`
 
@@ -96,9 +109,16 @@ module.exports = {
 					}
 					imitate: {
 						svg: './assets/remote2/remote_pair.svg',
+						// Prepend to the template, can be html, syles or script
+						// The value can be a path or a raw string
+						// Notice that when specifying a path the file has to
+						// be located in a frontend accessable path like /assets
+						prepend: [{ styles: ['../assets/AMST-606/animate.css'] }],
 					},
 					test_remote: {
 						svg: './assets/remote2/remote.svg',
+						// Append to the template, you can append multiple items
+						append: [{ styles: ['../assets/AMST-606/animate.css'] }],
 					},
 				},
 			},
@@ -260,6 +280,90 @@ module.exports = class Socket extends Promax {
 		return exports;
 	}
 };
+```
+
+###Svg
+Svg's included in the standard templates will be highlighted by the svghighlighter located in `/assets/433_generator/js/svghighlighter.js` in your project. To configure how to highlight your svg you need to set custom xml attributes. The highlighter will match a received data frame to the custom classes set in the svg. Notice that all custom classes need to be defined in the `<svg>` tag like `xmlns:customAttribute="nonEmptyString"`. By default you can use the `show`, `hide` and `pulse` class. To create custom attributes to which the svghighlighter will listen you will need to define them in the following way: `animation:myClass="not-myClass"`. Where in this instance the svg element will get the class `myClass` when the conditions are met, and get the class `not-myClass` when the condition is not met. Conditions are checked using a regular expression. The initial class can be set by adding `[class]:initial="true"` or `[class]:initial="false"` to the element. Multiple conditions on the same class will act as a `&&`. For example for an element like in the example below
+```
+<path myClass:state="1" myClass:group="1|2" ...></path>
+```
+with a data frame that contains `{ group: 0, address: 11010101, group:2, state:0 }` will set the class of the element to `not-myClass`. This is because although the group matches `2`, the state does not match `0`. When you want to add your own functionality you will want to add css to actually react to the class change of the svghighlighter. An example of such a custom class is given in the example below.
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Creator: CorelDRAW X7 -->
+<svg
+xmlns="http://www.w3.org/2000/svg"
+xmlns:animation="-"
+xmlns:pulse="-"
+xmlns:show="-"
+xmlns:hide="-"
+animation:contact="no-contact"
+xml:space="preserve" width="1667px" height="2110px" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd" viewBox="0 0 1667 2110" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <style type="text/css">
+  </style>
+ </defs>
+ <g id="Layer_x0020_1">
+  <path contact:state="1" d="..."/>
+  <path pulse:initial="true" pulse:state="1" pulse:group="0" d="..."/>
+  <path show:group="1|2" d="..."/>
+  <path hide:address=".{22}" d="..."/>
+ </g>
+</svg>
+```
+with an included css file containing the animation when the `contact` and `no-contact` classes are set like below.
+```
+svg .contact {
+    -moz-animation: contact 1s ease-in-out forwards;
+    -webkit-animation: contact 1s ease-in-out forwards;
+    -ms-animation: contact 1s ease-in-out forwards;
+    animation: contact 1s ease-in-out forwards;
+}
+
+svg .no-contact {
+    -moz-animation: no-contact 1s ease-in-out forwards;
+    -webkit-animation: no-contact 1s ease-in-out forwards;
+    -ms-animation: no-contact 1 ease-in-out forwards;
+    animation: no-contact 1s ease-in-out forwards;
+}
+
+@-webkit-keyframes contact {
+    from {
+        transform: rotate(8deg) translate(50px, -30px);
+    }
+    to {
+        transform: rotate(0.5deg) translate(-64px, -5px);
+    }
+}
+
+@keyframes contact {
+    from {
+        transform: rotate(8deg) translate(50px, -30px);
+    }
+    to {
+        transform: rotate(0.5deg) translate(-64px, -5px);
+    }
+}
+
+@-webkit-keyframes no-contact {
+    from {
+        transform: rotate(0.5deg) translate(-64px, -5px);
+    }
+    to {
+        transform: rotate(8deg) translate(50px, -30px);
+    }
+}
+
+@keyframes no-contact {
+    from {
+        transform: rotate(0.5deg) translate(-64px, -5px);
+    }
+    to {
+        transform: rotate(8deg) translate(50px, -30px);
+    }
+}
 ```
 
 ###Debugging

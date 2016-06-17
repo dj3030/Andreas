@@ -11,6 +11,7 @@ const ConfigParser = require('./configParser');
 const CONFIG_FILE = 'config.js';
 const DRIVER_DIR = 'drivers';
 const BEAUTIFY_OPTS = { indent_size: 1, indent_with_tabs: true };
+const PATH_SEP_REG = new RegExp(path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
 
 module.exports = class Generator {
 
@@ -40,9 +41,13 @@ module.exports = class Generator {
 	}
 
 	copyAssets() {
+		const libPath = path.join(this.driverDir, 'lib');
+		const assetsPath = path.join(this.root, 'assets/433_generator');
 		fse.ensureDirSync(this.driverDir);
-		fse.copySync(path.join(this.moduleDir, 'lib'), path.join(this.driverDir, 'lib'));
-		fse.copySync(path.join(this.moduleDir, 'assets'), path.join(this.root, 'assets/433_generator'));
+		fse.emptyDirSync(libPath);
+		fse.emptyDirSync(assetsPath);
+		fse.copySync(path.join(this.moduleDir, 'lib'), libPath);
+		fse.copySync(path.join(this.moduleDir, 'assets'), assetsPath);
 	}
 
 	readConfig(configPath, relativePath) {
@@ -76,8 +81,8 @@ module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { 
 			const driverPath = path.join(this.driverDir, deviceId);
 			const assetsPath = path.join(driverPath, 'assets');
 			const pairPath = path.join(driverPath, 'pair');
-			fse.ensureDirSync(assetsPath);
-			fse.ensureDirSync(pairPath);
+			fse.emptyDirSync(assetsPath);
+			fse.emptyDirSync(pairPath);
 
 			if (isValidPath(config[deviceId].icon)) {
 				fse.copySync(path.join(this.driverDir, config[deviceId].icon), path.join(assetsPath, 'icon.svg'));
@@ -128,14 +133,58 @@ module.exports = Object.assign(
 					delete viewOptions.options;
 					delete viewOptions.append;
 					delete viewOptions.prepend;
+					const viewTypeReg = /html|css|js$/;
 					const template = ['prepend', 'template', 'append'].reduce(
 						(prev, curr) => {
-							if (view[curr]) {
-								if ((view[curr].indexOf('./') === 0 || view[curr].indexOf('../') === 0) && isValidPath(view[curr])) {
-									return `${prev ? `${prev}\n\n` : ''}${fse.readFileSync(path.join(driverPath, view[curr]))}`;
-								}
-								return `${prev ? `${prev}\n\n` : ''}${view[curr]}`;
+							if (view[curr] && !Array.isArray(view[curr])) {
+								view[curr] = [view[curr]];
 							}
+							view[curr].forEach(currView => {
+								if (typeof currView === 'string') {
+									const type = viewTypeReg.exec(currView);
+									if (type === 'css') {
+										currView = { styles: [currView] };
+									} else if (type === 'js') {
+										currView = { scripts: [currView] };
+									} else {
+										currView = { html: [currView] };
+									}
+								}
+								if (currView.html) {
+									currView.html = Array.isArray(currView.html) ? currView.html : [currView.html];
+									currView.html.forEach(html => {
+										if ((html.indexOf('./') === 0 || html.indexOf('../') === 0) && isValidPath(html)) {
+											prev += `\n\n${fse.readFileSync(path.join(driverPath, html))}`;
+										} else {
+											prev += `\n\n${html}`;
+										}
+									});
+								}
+								if (currView.styles) {
+									currView.styles = Array.isArray(currView.styles) ? currView.styles : [currView.styles];
+									currView.styles.forEach(style => {
+										if (isValidPath(style)) {
+											prev += `\n\n<link href="${
+												path.join('../', style).replace(PATH_SEP_REG, '/')
+												}" rel="stylesheet" type="text/css"/>`;
+										} else {
+											prev += `\n\n<style>\n${style}\n</style>`;
+										}
+									});
+								}
+								if (currView.scripts) {
+									currView.scripts = Array.isArray(currView.scripts) ? currView.scripts : [currView.scripts];
+									currView.scripts.forEach(script => {
+										if (isValidPath(script)) {
+											prev += `\n\n<script src="${
+												path.join('../', script).replace(PATH_SEP_REG, '/')
+												}" type="text/javascript"></script>`;
+										} else {
+											prev += `\n\n<script>\n${script}\n</script>`;
+										}
+									});
+								}
+							});
 							return prev;
 						},
 						`<script>
