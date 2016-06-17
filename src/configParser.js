@@ -400,7 +400,7 @@ module.exports = class configParser {
 
 	assert(condition, message) {
 		if (!condition) {
-			Homey.warn('[WARNING]', message);
+			console.warn('[WARNING]', message);
 		}
 	}
 };
