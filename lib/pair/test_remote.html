@@ -18,7 +18,7 @@
 			Homey.alert(__(err.message || err));
 			return;
 		}
-		$imageContainer.highlight(device);
+		$imageContainer.highlight(device, options.initWithDeviceData ? device.data : false);
 	})
 </script>
 

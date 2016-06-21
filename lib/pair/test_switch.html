@@ -20,9 +20,10 @@
 			return;
 		}
 
-		$imageContainer.on('click', () => Homey.emit('toggle'));
-		$imageContainer.highlight(device);
-		Homey.emit('toggle');
+		$imageContainer.highlight(device, options.initWithDeviceData ? device.data : false);
+		if (options.sendToggleOnInit) {
+			Homey.emit('toggle');
+		}
 	})
 </script>
 
@@ -44,43 +45,5 @@
 	#image-container svg {
 		width: 100%;
 		height: 100%;
-	}
-
-	svg .toggle-off {
-		-moz-animation: toggle-off 0.3s ease-in-out forwards;
-		-webkit-animation: toggle-off 0.3s ease-in-out forwards;
-		-ms-animation: toggle-off 0.3s ease-in-out forwards;
-		animation: toggle-off 0.3s ease-in-out forwards;
-	}
-
-	svg .toggle {
-		-moz-animation: toggle 0.3s ease-in-out forwards;
-		-webkit-animation: toggle 0.3s ease-in-out forwards;
-		-ms-animation: toggle 0.3s ease-in-out forwards;
-		animation: toggle 0.3s ease-in-out forwards;
-	}
-
-	@-webkit-keyframes toggle-off {
-		to {
-			transform: translateX(-104px);
-		}
-	}
-
-	@keyframes toggle-off {
-		to {
-			transform: translateX(-104px);
-		}
-	}
-
-	@-webkit-keyframes toggle {
-		from {
-			transform: translateX(-104px);
-		}
-	}
-
-	@keyframes toggle {
-		from {
-			transform: translateX(-104px);
-		}
 	}
 </style>

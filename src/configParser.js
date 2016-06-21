@@ -65,6 +65,7 @@ module.exports = class configParser {
 					class: device.class,
 					capabilities: device.capabilities || [],
 					images: device.images,
+					settings: device.settings,
 				},
 				device.pair && device.pair.views ?
 					({
@@ -252,7 +253,7 @@ module.exports = class configParser {
 					deviceClass.pair = deviceClass.pair || {};
 					deviceClass.pair.viewOptions = deviceClass.pair.viewOptions || {};
 					const pairViewOptions = [{}]
-						.concat(deviceClassOptions.map(options => options.pair ? options.pair.viewOptions : null))
+						.concat(deviceClassOptions.map(options => (options.pair ? options.pair.viewOptions : null)))
 						.concat(deviceClass.pair ? deviceClass.pair.viewOptions || {} : {}).filter(Boolean);
 
 					(new Set([].concat.apply([], Object.keys(pairViewOptions).map(dc => Object.keys(pairViewOptions[dc])))))
@@ -283,7 +284,7 @@ module.exports = class configParser {
 							{
 								viewOptions: deepExtend.apply(
 									deepExtend,
-									[{}].concat(deviceClassOptions.map(options => options.pair ? options.pair.viewOptions : null))
+									[{}].concat(deviceClassOptions.map(options => (options.pair ? options.pair.viewOptions : null)))
 										.concat(deviceClass.pair.viewOptions).filter(Boolean)
 								),
 							}
@@ -386,7 +387,7 @@ module.exports = class configParser {
 		localePath = localePath || '';
 		Object.keys(this.locales).forEach(localeId => {
 			const translation = localePath.split('.').reduce(
-				(prev, curr) => prev.hasOwnProperty && prev.hasOwnProperty(curr) ? prev[curr] : { _notFound: true },
+				(prev, curr) => (prev.hasOwnProperty && prev.hasOwnProperty(curr) ? prev[curr] : { _notFound: true }),
 				this.locales[localeId]
 			);
 			if (typeof translation === 'string') {

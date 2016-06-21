@@ -2,9 +2,9 @@
 jQuery(function ($) {
 	if ($.fn.highlight) return;
 
-	$.expr[':'].hasAttr = $.expr.createPseudo(function(regex) {
+	$.expr[':'].hasAttr = $.expr.createPseudo(function (regex) {
 		var re = new RegExp(regex);
-		return function(obj) {
+		return function (obj) {
 			var attrs = obj.attributes;
 			for (var i = 0; i < attrs.length; i++) {
 				if (re.test(attrs[i].nodeName)) return true;
@@ -13,7 +13,7 @@ jQuery(function ($) {
 		};
 	});
 
-	$.fn.highlight = function (device) {
+	$.fn.highlight = function (device, frame) {
 		var svg = this;
 		if (!svg.is('svg')) {
 			svg = this.find('svg').first();
@@ -21,28 +21,64 @@ jQuery(function ($) {
 		if (!svg) {
 			throw new Error('Could not find svg in given selector');
 		}
+		if(svg.data('highlight-inited')){
+			console.log('already inited');
+			return;
+		}
+		svg.data('highlight-inited', true);
+		console.log(svg, svg.data('highlight-inited'));
 
-		Homey.on('frame', function(data){
-			if(device && device.data && device.data.id && device.data.id !== data.id){
+		Homey.on('frame', function (data) {
+			if (device && device.data && device.data.id && device.data.id !== data.id) {
 				return;
 			}
 			setState(svg, data);
 		});
 
-		setState(svg, { initial: 'true' });
+		if (frame) {
+			setState(svg, frame);
+		} else {
+			setState(svg, { initial: 'true' });
+		}
+
+		console.log('SET CLICK HANDLERS');
+		setClickHandlers(svg);
 	};
 
+	var onClickRegex = new RegExp('^onclick:(.*)$');
+	function setClickHandlers(svg) {
+		svg.find('*').add(svg).each(function () {
+			var elem = $(this);
+			var attrs = getAttributes(this);
+			attrs.forEach(function (attribute) {
+				var onClickEvent = onClickRegex.exec(attribute.nodeName);
+				if (onClickEvent) {
+					var data = elem.attr(onClickEvent[0]);
+					console.log('DATA', data);
+					data = data ? JSON.parse(data) : {};
+					console.log('registering', onClickEvent, data, elem);
+					elem.on('click', function () {
+						console.log('firing', onClickEvent, data);
+						Homey.emit(onClickEvent[1], data);
+					});
+				}
+			});
+		});
+	}
+
 	var animationRegex = new RegExp('^animation:(.*)$');
+
 	function setState(svg, state) {
+		console.log('STATE', state);
 		setAttributeForState(svg, state, 'show', 'class', 'show', 'hide');
 		setAttributeForState(svg, state, 'hide', 'class', 'hide', 'show');
 		setAttributeForState(svg, state, 'pulse', 'class', 'pulse', 'stop-animation');
-		svg.find('*').add(svg).each(function() {
-			var attrs = this.attributes;
-			for (var i = 0; i < attrs.length; i++) {
-				var animationClass = animationRegex.exec(attrs[i].nodeName);
-				if (animationClass){
-					var rootElem = $(this);
+		svg.find('*').add(svg).each(function () {
+			var rootElem = $(this);
+			var attrs = getAttributes(this);
+			attrs.forEach(function (attribute) {
+				var animationClass = animationRegex.exec(attribute.nodeName);
+				if (animationClass) {
 					setAttributeForState(
 						rootElem,
 						state,
@@ -52,7 +88,7 @@ jQuery(function ($) {
 						rootElem.attr(animationClass[0])
 					);
 				}
-			}
+			});
 		});
 	}
 
@@ -80,5 +116,15 @@ jQuery(function ($) {
 				$elem.attr(attr, attrValue + ' ' + notValue);
 			}
 		});
+	}
+
+	function getAttributes(element) {
+		var attributes = element.attributes;
+		var result = [];
+		// iterate backwards ensuring that length is an UInt32
+		for (var i = attributes.length >>> 0; i--;) {
+			result[i] = attributes[i];
+		}
+		return result;
 	}
 });
