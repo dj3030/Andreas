@@ -4,14 +4,12 @@
 <div>
 	<div id="image-container"></div>
 	<div id="body"><span class="content"></span></div>
-	<div class="foundAnimation" id="foundBackground" style="display:none;"></div>
-	<i class="fa fa-check-circle foundAnimation" id="found" style="display:none;" aria-hidden="true"></i>
 </div>
 
 <script>
 	var idPrefix = '[data-id="' + options.id + '"] ';
 	$(idPrefix + '#body > span').html(__(options.body));
-	$imageContainer = $(idPrefix + '#image-container');
+	var $imageContainer = $(idPrefix + '#image-container');
 	$imageContainer.css('width', options.svgWidth).css('height', options.svgHeight);
 
 	if(options.svg) {
@@ -24,14 +22,18 @@
 
 <style>
 	#body {
+		position: absolute;
+		bottom: 0;
+		height: 20vh;
 		text-align: center;
-		margin: 1em 0;
-		font-size: 1.3em;
+		font-size: 4vh;
+		width: 100%;
 	}
 
 	#image-container {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		margin: auto;
 		height: 70vh;
 		width: 80vw;

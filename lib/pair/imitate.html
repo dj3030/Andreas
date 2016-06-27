@@ -11,7 +11,7 @@
 <script>
 	var idPrefix = '[data-id="' + options.id + '"] ';
 	$(idPrefix + '#body > span').html(__(options.body));
-	$imageContainer = $(idPrefix + '#image-container');
+	var $imageContainer = $(idPrefix + '#image-container');
 	$imageContainer.css('width', options.svgWidth).css('height', options.svgHeight);
 
 	$imageContainer.html(options.svg);
@@ -43,14 +43,18 @@
 
 <style>
 	#body {
+		position: absolute;
+		bottom: 0;
+		height: 20vh;
 		text-align: center;
-		margin: 1em 0;
-		font-size: 1.3em;
+		font-size: 4vh;
+		width: 100%;
 	}
 
 	#image-container {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		margin: auto;
 		height: 70vh;
 		width: 80vw;

@@ -324,6 +324,7 @@ module.exports = class configParser {
 
 		const extendedDevices = this.parseDeviceClasses(Object.assign({}, this.deviceClasses, devices), globals);
 		Object.keys(devices).forEach(deviceId => {
+			// this.assert()
 			result[deviceId] = deepExtend({}, extendedDevices[deviceId]);
 			result[deviceId].driver = result[deviceId].driver || result[deviceId].globalDriver;
 			result[deviceId].signal = result[deviceId].signal || result[deviceId].globalSignal;
@@ -332,6 +333,7 @@ module.exports = class configParser {
 
 			if (result[deviceId].pair && result[deviceId].pair.viewOrder) {
 				result[deviceId].pair = {
+					viewOrder: result[deviceId].pair.viewOrder,
 					views: result[deviceId].pair.viewOrder.map(viewName => {
 						if (!this.views[viewName]) {
 							throw new Error(`Could not find view ${viewName} for ${deviceId}`);
@@ -399,9 +401,16 @@ module.exports = class configParser {
 		return locale;
 	}
 
-	assert(condition, message) {
+	assert(condition, message, type) {
 		if (!condition) {
-			console.warn('[WARNING]', message);
+			switch (type) {
+				case 'error':
+					console.error('[ERROR]', message);
+					process.exit();
+					break;
+				default:
+					console.warn('[WARNING]', message);
+			}
 		}
 	}
 };

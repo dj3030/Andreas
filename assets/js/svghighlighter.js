@@ -29,6 +29,7 @@ jQuery(function ($) {
 		console.log(svg, svg.data('highlight-inited'));
 
 		Homey.on('frame', function (data) {
+			console.log('GOT FRAME', data, device);
 			if (device && device.data && device.data.id && device.data.id !== data.id) {
 				return;
 			}
