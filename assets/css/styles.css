@@ -1,0 +1,41 @@
+.view-content {
+    height: 100%;
+}
+
+#body {
+    position: absolute;
+    bottom: 30px;
+    height: 20vh;
+    text-align: center;
+    font-size: 4vh;
+    width: 100%;
+}
+
+#body ul li {
+    padding-bottom: 4vh;
+    font-size: 4vh;
+}
+
+#image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    height: 65vh;
+    width: 80vw;
+}
+
+#image-container svg {
+    width: 100%;
+    height: 100%;
+}
+
+#button-container {
+    text-align: center;
+}
+
+#button-container > button {
+    display: inline-block;
+    padding: 0 3em;
+    margin: 0 10px;
+}

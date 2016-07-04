@@ -34,6 +34,46 @@ module.exports = class configParser {
 		return this.locales;
 	}
 
+	setLocales() {
+		const locales = deepExtend({}, this.getLocales());
+
+		traverse(this.devices).forEach(function nextItem(val) {
+			if (typeof val === 'string' && val.indexOf(' ') === -1 &&
+				(this.key === 'label' || this.key === 'title' || this.key === 'placeholder')
+			) {
+				val.split('.').reduce((prev, curr, index, target) => {
+					if (prev.hasOwnProperty && prev.hasOwnProperty(curr)) {
+						return prev[curr];
+					} else if (target.length === index + 1) {
+						return prev[curr] = val;
+					} else {
+						return prev[curr] = {};
+					}
+				}, locales.en);
+
+				Object.keys(locales).forEach(localeId => {
+					if (localeId === 'en') return;
+
+					val.split('.').reduce((prev, curr, index, target) => {
+						if (prev.hasOwnProperty && prev.hasOwnProperty(curr) && prev[curr] !== val) {
+							return prev[curr];
+						} else if (target.length === index + 1) {
+							return prev[curr] = this.getLocale(val, 'en');
+						} else {
+							return prev[curr] = {};
+						}
+					}, locales[localeId]);
+				});
+			}
+		});
+
+		const localesPath = path.join(this.projectRoot, 'locales');
+		Object.keys(locales).forEach(localeId => {
+			try {
+				fs.writeFileSync(path.join(localesPath, `${localeId}.json`), JSON.stringify(locales[localeId], null, '\t'));
+			} catch (ignore) { return ignore; }
+		});
+	}
 
 	getConfig() {
 		return {
@@ -48,6 +88,7 @@ module.exports = class configParser {
 	}
 
 	getAppJsonConfig() {
+		const self = this;
 		const devices = this.prefixPath(this.devices, './drivers');
 		const result = {};
 		result.drivers = Object.keys(devices).map(deviceId => {
@@ -58,6 +99,12 @@ module.exports = class configParser {
 			this.assert(device.images && device.images.small, `No small image set for ${deviceId}!`);
 			this.assert(device.images && device.images.large, `No large image set for ${deviceId}!`);
 
+			const localizedSettings = traverse(device.settings).forEach(function nextItem(val) {
+				if (typeof val === 'string' && (this.key === 'label' || this.key === 'title' || this.key === 'placeholder')) {
+					this.update(self.getLocaleObject(val));
+				}
+			});
+
 			return Object.assign(
 				{
 					id: deviceId,
@@ -65,7 +112,7 @@ module.exports = class configParser {
 					class: device.class,
 					capabilities: device.capabilities || [],
 					images: device.images,
-					settings: device.settings,
+					settings: localizedSettings,
 				},
 				device.pair && device.pair.views ?
 					({
@@ -98,10 +145,9 @@ module.exports = class configParser {
 			);
 		});
 		result.flow = {};
-		const self = this;
 
 		const localizedGlobals = traverse(this.globals).forEach(function nextItem(val) {
-			if (typeof val === 'string' && this.key === 'label' || this.key === 'title' || this.key === 'placeholder') {
+			if (typeof val === 'string' && (this.key === 'label' || this.key === 'title' || this.key === 'placeholder')) {
 				this.update(self.getLocaleObject(val));
 			}
 		});
@@ -115,9 +161,7 @@ module.exports = class configParser {
 						traverse(flowItem).forEach(function nextItem(val) {
 							if (
 								typeof val === 'string' &&
-								this.key === 'label' ||
-								this.key === 'title' ||
-								this.key === 'placeholder'
+								(this.key === 'label' || this.key === 'title' || this.key === 'placeholder')
 							) {
 								this.update(self.getLocaleObject(val));
 							}
@@ -193,11 +237,19 @@ module.exports = class configParser {
 						view.options[option] = { default: view.options[option] };
 					}
 				});
+				viewOptions = viewOptions.concat(view);
+
 				const options = Object.assign.apply(
 					{},
-					viewOptions.map(viewOption => viewOption.options).concat(view.options)
+					viewOptions.map(viewOption => viewOption.options)
 				);
-				viewOptions = viewOptions.concat([view, { options: options }]);
+				const prepend = viewOptions.reduce((prev, curr) => {
+					return prev.concat(curr.prepend || []);
+				}, []);
+				const append = viewOptions.reduce((prev, curr) => {
+					return prev.concat(curr.append || []);
+				}, []);
+				viewOptions = viewOptions.concat({ options: options, prepend, append });
 				const ret = Object.assign.apply({}, viewOptions);
 				delete ret.extends;
 				return ret;
@@ -257,25 +309,27 @@ module.exports = class configParser {
 						.concat(deviceClass.pair ? deviceClass.pair.viewOptions || {} : {}).filter(Boolean);
 
 					(new Set([].concat.apply([], Object.keys(pairViewOptions).map(dc => Object.keys(pairViewOptions[dc])))))
-						.forEach(option => {
-							deviceClass.pair.viewOptions[option] = deviceClass.pair.viewOptions[option] || {};
-							['prepend', 'append'].forEach(type => {
-								if (deviceClass.pair.viewOptions[option][type] && !Array.isArray(
-										deviceClass.pair.viewOptions[option][type]
-									)
+						.forEach(viewName => {
+							deviceClass.pair.viewOptions[viewName] = deviceClass.pair.viewOptions[viewName] || {};
+							const deviceViewOptions = deviceClass.pair.viewOptions[viewName];
+
+							['prepend', 'append'].forEach(contentLocation => {
+								if (
+									deviceViewOptions[contentLocation] && !Array.isArray(deviceViewOptions[contentLocation])
 								) {
-									deviceClass.pair.viewOptions[option][type] = [deviceClass.pair.viewOptions[option][type]];
+									deviceViewOptions[contentLocation] = [deviceViewOptions[contentLocation]];
 								} else {
-									deviceClass.pair.viewOptions[option][type] = [];
+									deviceViewOptions[contentLocation] = deviceViewOptions[contentLocation] || [];
 								}
-								deviceClass.pair.viewOptions[option][type] = Object.keys(pairViewOptions).reduce((optionList, curr) => {
-									if (curr.pair && curr.pair.viewOptions && curr.pair.viewOptions[option] &&
-										curr.pair.viewOptions[option][type]
-									) {
-										return optionList.concat(curr.pair.viewOptions[option][type]);
-									}
-									return optionList;
-								}, deviceClass.pair.viewOptions[option][type]);
+								deviceClass.pair.viewOptions[viewName][contentLocation] = Object.keys(pairViewOptions)
+									.reduce((optionList, curr) => {
+										if (curr.pair && curr.pair.viewOptions && curr.pair.viewOptions[viewName] &&
+											curr.pair.viewOptions[viewName][contentLocation]
+										) {
+											return optionList.concat(curr.pair.viewOptions[viewName][contentLocation]);
+										}
+										return optionList;
+									}, deviceViewOptions[contentLocation]);
 							});
 						});
 					pair = Object.assign.apply(
@@ -310,8 +364,7 @@ module.exports = class configParser {
 		}
 
 		Object.keys(deviceClasses).forEach(className => {
-			const ret = loadDeviceClass(className);
-			result[className] = ret;
+			result[className] = loadDeviceClass(className);
 		});
 
 		return result;
@@ -382,6 +435,14 @@ module.exports = class configParser {
 		});
 
 		return result;
+	}
+
+	getLocale(localePath, localeId) {
+		const result = localePath.split('.').reduce(
+			(prev, curr) => (prev.hasOwnProperty && prev.hasOwnProperty(curr) ? prev[curr] : { _notFound: true }),
+			this.locales[localeId]
+		);
+		return result._notFound ? false : result;
 	}
 
 	getLocaleObject(localePath) {

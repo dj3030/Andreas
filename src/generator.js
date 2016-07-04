@@ -38,6 +38,7 @@ module.exports = class Generator {
 		this.readConfig(path.join(this.configDir, CONFIG_FILE));
 		this.writeConfig(path.join(this.driverDir, 'config.js'));
 		this.generateFiles();
+		this.configParser.setLocales();
 	}
 
 	copyAssets() {
@@ -113,8 +114,8 @@ module.exports = Object.assign(
 					}
 					if (view.template.indexOf('./') !== 0 && view.template.indexOf('../') !== 0) return; // default template
 					view.options = view.options || {};
-					view.append = view.options.append;
-					view.prepend = view.options.prepend;
+					view.append = (view.append || []).concat(view.options.append || []);
+					view.prepend = (view.prepend || []).concat(view.options.prepend || []);
 					Object.keys(view.options).forEach(optionName => {
 						if (
 							typeof view.options[optionName] === 'string' &&
@@ -135,16 +136,18 @@ module.exports = Object.assign(
 					delete viewOptions.prepend;
 					const viewTypeReg = /html|css|js$/;
 					const template = ['prepend', 'template', 'append'].reduce(
-						(prev, curr) => {
-							if (view[curr] && !Array.isArray(view[curr])) {
-								view[curr] = [view[curr]];
+						(prev, templateType) => {
+							if (!view[templateType]){
+								return prev;
+							} else if (!Array.isArray(view[templateType])) {
+								view[templateType] = [view[templateType]];
 							}
-							view[curr].forEach(currView => {
+							view[templateType].forEach(currView => {
 								if (typeof currView === 'string') {
 									const type = viewTypeReg.exec(currView);
-									if (type === 'css') {
+									if (type && type[0] === 'css') {
 										currView = { styles: [currView] };
-									} else if (type === 'js') {
+									} else if (type && type[0] === 'js') {
 										currView = { scripts: [currView] };
 									} else {
 										currView = { html: [currView] };
