@@ -1,6 +1,5 @@
-<div>
-	<div id="image-container"></div>
-	<div id="button-container"></div>
+<div class="centered-container">
+	<div id="choice-button-container"></div>
 	<div id="body"><span class="content"></span></div>
 </div>
 
@@ -9,14 +8,17 @@
 	$(idPrefix + '#body > span').html(__(options.body));
 	var $imageContainer = $(idPrefix + '#image-container');
 	$imageContainer.css('width', options.svgWidth).css('height', options.svgHeight);
-	var $buttonContainer = $(idPrefix + '#button-container');
+	var $buttonContainer = $(idPrefix + '#choice-button-container');
 
-	$imageContainer.html(options.svg);
 	options.buttons.forEach(function (button) {
 		$buttonContainer.append(
-			$('<button>')
-				.addClass('button')
-				.html(__(button.name))
+			$('<div>').addClass('button-container')
+				.html(button.svg)
+				.append(
+					$('<button>')
+						.addClass('button')
+						.html(__(button.name))
+				)
 				.on('click', Homey.showView.bind(Homey, button.view))
 		);
 	});

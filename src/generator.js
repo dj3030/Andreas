@@ -4,9 +4,10 @@
 const util = require('util');
 const path = require('path');
 const fse = require('fs-extra');
-const beautify = require('js-beautify').js_beautify;
+const traverse = require('traverse');
 const isValidPath = require('is-valid-path');
 const ConfigParser = require('./configParser');
+const beautify = require('js-beautify').js_beautify;
 
 const CONFIG_FILE = 'config.js';
 const DRIVER_DIR = 'drivers';
@@ -38,7 +39,6 @@ module.exports = class Generator {
 		this.readConfig(path.join(this.configDir, CONFIG_FILE));
 		this.writeConfig(path.join(this.driverDir, 'config.js'));
 		this.generateFiles();
-		this.configParser.setLocales();
 	}
 
 	copyAssets() {
@@ -68,6 +68,7 @@ module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { 
 `
 		);
 
+		this.configParser.setLocales();
 		const appConfigPath = path.join(this.root, 'app.json');
 		const appConfig = fse.readJsonSync(appConfigPath);
 		Object.assign(appConfig, this.configParser.getAppJsonConfig());
@@ -116,17 +117,15 @@ module.exports = Object.assign(
 					view.options = view.options || {};
 					view.append = (view.append || []).concat(view.options.append || []);
 					view.prepend = (view.prepend || []).concat(view.options.prepend || []);
-					Object.keys(view.options).forEach(optionName => {
+					traverse(view.options).forEach(function nextItem(item) {
 						if (
-							typeof view.options[optionName] === 'string' &&
-							(view.options[optionName].indexOf('./') === 0 || view.options[optionName].indexOf('../') === 0) &&
-							isValidPath(view.options[optionName])
+							typeof item === 'string' &&	(item.indexOf('./') === 0 || item.indexOf('../') === 0) && isValidPath(item)
 						) {
-							const extname = path.extname(view.options[optionName]);
-							if (extname === '.js' || extname === '') {
-								view.options[optionName] = require(path.join(driverPath, view.options[optionName]));
+							const extname = path.extname(item);
+							if (extname === '.js' || extname === '.json' || extname === '') {
+								this.update(require(path.join(driverPath, item)));
 							} else {
-								view.options[optionName] = String(fse.readFileSync(path.join(driverPath, view.options[optionName])));
+								this.update(String(fse.readFileSync(path.join(driverPath, item))));
 							}
 						}
 					});
@@ -137,7 +136,7 @@ module.exports = Object.assign(
 					const viewTypeReg = /html|css|js$/;
 					const template = ['prepend', 'template', 'append'].reduce(
 						(prev, templateType) => {
-							if (!view[templateType]){
+							if (!view[templateType]) {
 								return prev;
 							} else if (!Array.isArray(view[templateType])) {
 								view[templateType] = [view[templateType]];

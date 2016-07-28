@@ -2,10 +2,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: auto;
-    height: 70vh;
+    height: 24vh;
     width: 80vw;
     font-size: 4vw;
+    -webkit-align-self: center;
+    -ms-flex-item-align: center;
+    align-self: center;
 }
 
 #dipswitch {

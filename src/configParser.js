@@ -4,16 +4,27 @@
 const fs = require('fs');
 const path = require('path');
 const upath = require('upath');
+const crypto = require('crypto');
 const traverse = require('traverse');
 const deepExtend = require('deep-extend');
 const isValidPath = require('is-valid-path');
+
+const generatorLocales = {};
+fs.readdirSync(path.join(__dirname, '../locales')).forEach(fileName => {
+	if (path.extname(fileName) === '.js') {
+		generatorLocales[path.basename(fileName, '.js')] = require(path.join(__dirname, '../locales', fileName));
+	}
+});
 
 module.exports = class configParser {
 
 	constructor(projectPath) {
 		this.views = {};
 		this.devices = {};
+		this.deviceOrder = [];
+		this.drivers = [];
 		this.deviceClasses = {};
+		this.signals = new Map();
 		this.projectRoot = projectPath;
 		this.getLocales();
 	}
@@ -21,51 +32,80 @@ module.exports = class configParser {
 	getLocales() {
 		if (!this.locales) {
 			this.locales = { en: {} };
-			try {
-				const localesPath = path.join(this.projectRoot, 'locales');
-				const localesFiles = fs.readdirSync(localesPath);
-				localesFiles.forEach(fileName => {
-					if (path.extname(fileName) === '.json') {
-						this.locales[path.basename(fileName, '.json')] = require(path.join(localesPath, fileName));
-					}
-				});
-			} catch (ignore) { return ignore; }
+			const localesPath = path.join(this.projectRoot, 'locales');
+			const localesFiles = fs.readdirSync(localesPath);
+			localesFiles.forEach(fileName => {
+				if (path.extname(fileName) === '.json') {
+					this.locales[path.basename(fileName, '.json')] = require(path.join(localesPath, fileName));
+				}
+			});
 		}
 		return this.locales;
 	}
 
 	setLocales() {
-		const locales = deepExtend({}, this.getLocales());
+		const locales = this.getLocales();
+
+		const setLocalePath = (pathArray, localeId) => {
+			const pathString = pathArray.join('.');
+			pathArray.reduce((prev, curr, index, target) => {
+				this.assert(
+					prev && prev.constructor.name !== 'String',
+					`Translation key '${prev}' collides with key '${pathString}'. '${prev}' cannot be a String and an Object at \
+the same time. Please remove one of both from your config.`,
+					'error'
+				);
+
+				if (target.length === index + 1) {
+					let result = this.getLocale(pathString, locales[localeId]);
+					if (!result || result.indexOf('\u0000') !== -1) {
+						result = this.getLocale(pathString, generatorLocales[localeId]);
+						if (result) {
+							result = `${result}\u0000`;
+						} else if (localeId === 'en') {
+							result = pathString;
+						} else {
+							result = null;
+						}
+					}
+					return prev[curr] = result;
+				} else if (prev && prev.hasOwnProperty && prev.hasOwnProperty(curr)) {
+					return prev[curr];
+				}
+				return prev[curr] = {};
+			}, locales[localeId] || {});
+		};
 
 		traverse(this.devices).forEach(function nextItem(val) {
-			if (typeof val === 'string' && val.indexOf(' ') === -1 &&
-				(this.key === 'label' || this.key === 'title' || this.key === 'placeholder')
+			if (typeof val === 'string' && val.indexOf(' ') === -1 && (
+					this.key === 'label' ||
+					this.key === 'title' ||
+					this.key === 'placeholder' ||
+					(this.key === 'name' && this.path.indexOf('args') === -1) ||
+					(
+						(val.indexOf('deviceClasses.') !== -1 || val.indexOf('views.') !== -1) &&
+						(this.path.indexOf('options') !== -1 || this.path.indexOf('viewOptions') !== -1)
+					)
+				)
 			) {
-				val.split('.').reduce((prev, curr, index, target) => {
-					if (prev.hasOwnProperty && prev.hasOwnProperty(curr)) {
-						return prev[curr];
-					} else if (target.length === index + 1) {
-						return prev[curr] = val;
-					} else {
-						return prev[curr] = {};
-					}
-				}, locales.en);
-
-				Object.keys(locales).forEach(localeId => {
-					if (localeId === 'en') return;
-
-					val.split('.').reduce((prev, curr, index, target) => {
-						if (prev.hasOwnProperty && prev.hasOwnProperty(curr) && prev[curr] !== val) {
-							return prev[curr];
-						} else if (target.length === index + 1) {
-							return prev[curr] = this.getLocale(val, 'en');
-						} else {
-							return prev[curr] = {};
-						}
-					}, locales[localeId]);
-				});
+				Object.keys(locales).forEach(localeId => setLocalePath(val.split('.'), localeId));
 			}
 		});
+
+		traverse(generatorLocales.en['433_generator'])
+			.reduce(function nextItem(pathList) {
+				if (this.isLeaf) {
+					const leafPath = this.path;
+					leafPath.unshift('433_generator');
+					pathList.push(leafPath);
+				}
+				return pathList;
+			}, [])
+			.forEach(localePath => {
+				Object.keys(locales).forEach(localeId => {
+					setLocalePath(localePath, localeId);
+				});
+			});
 
 		const localesPath = path.join(this.projectRoot, 'locales');
 		Object.keys(locales).forEach(localeId => {
@@ -90,7 +130,15 @@ module.exports = class configParser {
 	getAppJsonConfig() {
 		const self = this;
 		const devices = this.prefixPath(this.devices, './drivers');
+		const drivers = Array.isArray(this.drivers) ? this.drivers.map(driver => this.prefixPath(driver, './drivers')) : [];
 		const result = {};
+
+		result.signals = { 433: {} };
+		this.signals.forEach((id, signalString) => {
+			result.signals[433][id] = JSON.parse(signalString);
+			delete result.signals[433][id].id;
+		});
+
 		result.drivers = Object.keys(devices).map(deviceId => {
 			const device = devices[deviceId];
 
@@ -114,7 +162,7 @@ module.exports = class configParser {
 					images: device.images,
 					settings: localizedSettings,
 				},
-				device.pair && device.pair.views ?
+				device.pair && device.pair.views && device.pair.views.length ?
 					({
 						pair: device.pair.views.map((view, index, views) => {
 							const pairViewConfig = {
@@ -143,7 +191,7 @@ module.exports = class configParser {
 					}) :
 					({})
 			);
-		});
+		}).sort((a, b) => this.deviceOrder.indexOf(a.id) - this.deviceOrder.indexOf(b.id)).concat(drivers);
 		result.flow = {};
 
 		const localizedGlobals = traverse(this.globals).forEach(function nextItem(val) {
@@ -179,6 +227,9 @@ module.exports = class configParser {
 		if (pathPrefix) {
 			config = this.prefixPath(config, pathPrefix);
 		}
+
+		this.deviceOrder = this.deviceOrder.concat(Object.keys(config.devices || {}));
+		this.drivers = this.drivers.concat(config.drivers || []);
 
 		this.globals = Object.assign(this.globals || {}, config, { views: null, deviceClasses: null, devices: null });
 
@@ -243,12 +294,9 @@ module.exports = class configParser {
 					{},
 					viewOptions.map(viewOption => viewOption.options)
 				);
-				const prepend = viewOptions.reduce((prev, curr) => {
-					return prev.concat(curr.prepend || []);
-				}, []);
-				const append = viewOptions.reduce((prev, curr) => {
-					return prev.concat(curr.append || []);
-				}, []);
+				const prepend = viewOptions.reduce((prev, curr) => prev.concat(curr.prepend || []), []);
+				const append = viewOptions.reduce((prev, curr) => prev.concat(curr.append || []), []);
+
 				viewOptions = viewOptions.concat({ options: options, prepend, append });
 				const ret = Object.assign.apply({}, viewOptions);
 				delete ret.extends;
@@ -321,12 +369,13 @@ module.exports = class configParser {
 								} else {
 									deviceViewOptions[contentLocation] = deviceViewOptions[contentLocation] || [];
 								}
-								deviceClass.pair.viewOptions[viewName][contentLocation] = Object.keys(pairViewOptions)
+								deviceViewOptions[contentLocation] = Object.keys(deviceClassOptions)
 									.reduce((optionList, curr) => {
-										if (curr.pair && curr.pair.viewOptions && curr.pair.viewOptions[viewName] &&
-											curr.pair.viewOptions[viewName][contentLocation]
+										curr = deviceClassOptions[curr].pair;
+										if (curr && curr.viewOptions && curr.viewOptions[viewName] &&
+											curr.viewOptions[viewName][contentLocation]
 										) {
-											return optionList.concat(curr.pair.viewOptions[viewName][contentLocation]);
+											return optionList.concat(curr.viewOptions[viewName][contentLocation]);
 										}
 										return optionList;
 									}, deviceViewOptions[contentLocation]);
@@ -338,7 +387,7 @@ module.exports = class configParser {
 							{
 								viewOptions: deepExtend.apply(
 									deepExtend,
-									[{}].concat(deviceClassOptions.map(options => (options.pair ? options.pair.viewOptions : null)))
+									[{}].concat(deviceClassOptions.map(options => (options.pair ? options.pair.viewOptions || {} : {})))
 										.concat(deviceClass.pair.viewOptions).filter(Boolean)
 								),
 							}
@@ -357,7 +406,6 @@ module.exports = class configParser {
 
 				const ret = Object.assign.apply({}, [{}].concat(deviceClassOptions));
 				delete ret.extends;
-				// console.log(className, ret);
 				return ret;
 			}
 			throw new Error(`Device class ${className} cannot be found`);
@@ -380,7 +428,14 @@ module.exports = class configParser {
 			// this.assert()
 			result[deviceId] = deepExtend({}, extendedDevices[deviceId]);
 			result[deviceId].driver = result[deviceId].driver || result[deviceId].globalDriver;
-			result[deviceId].signal = result[deviceId].signal || result[deviceId].globalSignal;
+			const signal = result[deviceId].signal || result[deviceId].globalSignal;
+			const signalKey = JSON.stringify(signal);
+			const signalId = this.signals.has(signalKey) ? this.signals.get(signalKey) : this.signals.set(
+				signalKey,
+				signal.id || crypto.createHash('md5').update(signalKey).digest('hex')
+			).get(signalKey);
+			result[deviceId].signal = signalId;
+
 			delete result[deviceId].globalDriver;
 			delete result[deviceId].globalSignal;
 
@@ -437,12 +492,18 @@ module.exports = class configParser {
 		return result;
 	}
 
-	getLocale(localePath, localeId) {
-		const result = localePath.split('.').reduce(
-			(prev, curr) => (prev.hasOwnProperty && prev.hasOwnProperty(curr) ? prev[curr] : { _notFound: true }),
-			this.locales[localeId]
-		);
-		return result._notFound ? false : result;
+	getLocale(localePath, locale) {
+		const result = localePath.split('.').reduce((prev, curr) => {
+			if (prev && prev.hasOwnProperty && prev.hasOwnProperty(curr)) {
+				return prev[curr];
+			}
+			return { _notFound: true };
+		}, locale);
+
+		if (typeof result === 'string' && result !== localePath) {
+			return result;
+		}
+		return false;
 	}
 
 	getLocaleObject(localePath) {
@@ -454,7 +515,7 @@ module.exports = class configParser {
 				this.locales[localeId]
 			);
 			if (typeof translation === 'string') {
-				locale[localeId] = translation;
+				locale[localeId] = translation.replace('&#8203', '');
 			} else if (localeId === 'en') {
 				locale[localeId] = localePath;
 			}
