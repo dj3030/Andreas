@@ -19,6 +19,10 @@ module.exports = {
 			title: 'Pair your device with Homey',
 			body: 'Put your device in pairing mode, then click next to pair your device with Homey.',
 		},
+		generic_codewheel: {
+			title: 'Configure your device code',
+			body: 'Click the characters on the code wheel above or configure the wheels on the device so they match, then click next.',
+		},
 		generic_dipswitch: {
 			title: 'Set dipswitches of device',
 			body: 'Click on the dipswitches above to put them in the same arrangement as those of your device, then click next.',
@@ -74,6 +78,16 @@ module.exports = {
 					buttons: {
 						generic_imitate: 'Copy a paired remote',
 						generic_program: 'Generate a new signal',
+					},
+				},
+			},
+		},
+		generic_codewheel_switch: {
+			views: {
+				generic_choice: {
+					body: 'Choose if you want to copy an existing signal from a paired remote or if you want manually set the codewheels to pair this device.',
+					buttons: {
+						generic_codewheel: 'Manually set codewheels',
 					},
 				},
 			},
@@ -165,6 +179,7 @@ module.exports = {
 			device_exists: 'This device is already paired with Homey.',
 			no_device: 'No device set to pair. Please close the pairing wizard and try again.',
 			no_settings: 'No settings object. Please try again.',
+			invalid_device: 'The device that was created is invalid. Please try again.',
 		},
 	},
 };

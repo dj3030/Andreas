@@ -23,6 +23,7 @@ module.exports = class configParser {
 		this.devices = {};
 		this.deviceOrder = [];
 		this.drivers = [];
+		this.defaultSignals = { 433: {} };
 		this.deviceClasses = {};
 		this.signals = new Map();
 		this.projectRoot = projectPath;
@@ -133,7 +134,7 @@ the same time. Please remove one of both from your config.`,
 		const drivers = Array.isArray(this.drivers) ? this.drivers.map(driver => this.prefixPath(driver, './drivers')) : [];
 		const result = {};
 
-		result.signals = { 433: {} };
+		result.signals = this.defaultSignals;
 		this.signals.forEach((id, signalString) => {
 			result.signals[433][id] = JSON.parse(signalString);
 			delete result.signals[433][id].id;
@@ -230,6 +231,11 @@ the same time. Please remove one of both from your config.`,
 
 		this.deviceOrder = this.deviceOrder.concat(Object.keys(config.devices || {}));
 		this.drivers = this.drivers.concat(config.drivers || []);
+		Object.keys(config.signals || {})
+			.map(type =>
+				Object.keys(config.signals[type])
+					.map(id => this.defaultSignals[type][id] = config.signals[type][id])
+			);
 
 		this.globals = Object.assign(this.globals || {}, config, { views: null, deviceClasses: null, devices: null });
 

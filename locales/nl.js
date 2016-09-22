@@ -19,6 +19,10 @@ module.exports = {
 			title: 'Programmeer je apparaat met Homey',
 			body: 'Zet je apparaat in programmeer modus en klik op volgende om je apparaat met Homey te verbinden.',
 		},
+		generic_codewheel: {
+			title: 'Configureer de apparaatcode',
+			body: 'Klik op de karakters op de bovenstaande lettercodeshijf of pas de lettercodeshijf op je apparaat aan zodat deze gelijk aan elkaar zijn, klik daarna op volgende.',
+		},
 		generic_dipswitch: {
 			title: 'Stel de dipswitches van je apparaat in',
 			body: 'Klik op de bovenstaande dipswitches om ze gelijk aan de dipswitches van je apparaat in te stellen, klik daarna op volgende.',
@@ -74,6 +78,16 @@ module.exports = {
 					buttons: {
 						generic_imitate: 'Kopieer je afstandsbediening',
 						generic_program: 'Genereer een nieuw signaal',
+					},
+				},
+			},
+		},
+		generic_codewheel_switch: {
+			views: {
+				generic_choice: {
+					body: 'Kies of je het signaal van een gekoppelde afstandsbediening wil kopiëren of dat je handmatig de lettercodeshijf wil instellen.',
+					buttons: {
+						generic_codewheel: 'Handmatig lettercodeshijf instellen',
 					},
 				},
 			},
@@ -165,6 +179,7 @@ module.exports = {
 			device_exists: 'Apparaat is al gekoppeld met Homey.',
 			no_device: 'Er is geen apparaat ingesteld. Sluit de pairing wizard en probeer opnieuw.',
 			no_settings: 'Geen instelling object. Probeer aub opnieuw.',
+			invalid_device: 'Het apparaat dat is aangemaakt is incorrect. Probeer aub opnieuw.',
 		},
 	},
 };
