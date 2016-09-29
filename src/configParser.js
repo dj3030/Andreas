@@ -218,7 +218,7 @@ the same time. Please remove one of both from your config.`,
 						return flowItem;
 					})
 				);
-			}, []).concat(localizedGlobals[key] || []);
+			}, []).concat(localizedGlobals.flow[key] || []);
 		});
 
 		return result;
