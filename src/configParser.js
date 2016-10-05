@@ -192,7 +192,9 @@ the same time. Please remove one of both from your config.`,
 					}) :
 					({})
 			);
-		}).sort((a, b) => this.deviceOrder.indexOf(a.id) - this.deviceOrder.indexOf(b.id)).concat(drivers);
+		}).sort((a, b) => this.deviceOrder.indexOf(a.id) - this.deviceOrder.indexOf(b.id))
+			.concat(drivers);
+
 		result.flow = {};
 
 		const localizedGlobals = traverse(this.globals).forEach(function nextItem(val) {
@@ -218,7 +220,7 @@ the same time. Please remove one of both from your config.`,
 						return flowItem;
 					})
 				);
-			}, []).concat(localizedGlobals.flow[key] || []);
+			}, []).concat((localizedGlobals.flow || {})[key] || []);
 		});
 
 		return result;

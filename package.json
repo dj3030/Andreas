@@ -1,6 +1,6 @@
 {
   "name": "homey-433",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "433 tools for Homey apps",
   "main": "index.js",
   "scripts": {
@@ -22,6 +22,6 @@
   },
   "engineStrict": true,
   "bin": {
-    "homey433": "bin/homey433"
+    "homey433": "bin/homey433.js"
   }
 }
