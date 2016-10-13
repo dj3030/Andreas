@@ -44,11 +44,13 @@ module.exports = class configParser {
 		return this.locales;
 	}
 
-	setLocales() {
+	setLocales(localesObject) {
 		const locales = this.getLocales();
 
 		const setLocalePath = (pathArray, localeId) => {
 			const pathString = pathArray.join('.');
+			if (pathString === '') return;
+
 			pathArray.reduce((prev, curr, index, target) => {
 				this.assert(
 					prev && prev.constructor.name !== 'String',
@@ -59,7 +61,7 @@ the same time. Please remove one of both from your config.`,
 
 				if (target.length === index + 1) {
 					let result = this.getLocale(pathString, locales[localeId]);
-					if (!result || result.indexOf('\u0000') !== -1) {
+					if (!result || result.slice(-1) === '\u0000') {
 						result = this.getLocale(pathString, generatorLocales[localeId]);
 						if (result) {
 							result = `${result}\u0000`;
@@ -231,6 +233,10 @@ the same time. Please remove one of both from your config.`,
 			config = this.prefixPath(config, pathPrefix);
 		}
 
+		if (config.locales) {
+			this.appendLocales(config.locales);
+		}
+
 		this.deviceOrder = this.deviceOrder.concat(Object.keys(config.devices || {}));
 		this.drivers = this.drivers.concat(config.drivers || []);
 		Object.keys(config.signals || {})
@@ -251,6 +257,17 @@ the same time. Please remove one of both from your config.`,
 			{ globalSignal: this.globals.signal, globalDriver: this.globals.driver }
 		);
 	}
+
+	appendLocales(newLocales) {
+		const locales = traverse(generatorLocales);
+
+		traverse(newLocales).forEach(function nextItem(str) {
+			if (this.isLeaf && str && str.slice(-1) !== '\u0000') {
+				locales.set(this.path, str);
+			}
+		});
+	}
+
 
 	prefixPath(config, pathPrefix) {
 		return traverse(deepExtend({}, config)).forEach(function nextItem(val) {

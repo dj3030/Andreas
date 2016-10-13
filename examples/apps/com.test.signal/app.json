@@ -1,0 +1,63 @@
+{
+  "id": "com.test.signal",
+  "name": {
+    "en": "Signal Test Application"
+  },
+  "version": "0.0.1",
+  "compatibility": ">=0.10",
+  "author": {
+    "name": "Bas Kiers",
+    "email": "bas@athom.nl"
+  },
+  "signals": {
+    "433": {
+      "0a6a31f2d9f0bdee0ae814b12a399f83": {
+        "sof": [
+          275,
+          2640
+        ],
+        "eof": [
+          275
+        ],
+        "words": [
+          [
+            250,
+            275,
+            250,
+            1250
+          ],
+          [
+            250,
+            1250,
+            250,
+            275
+          ]
+        ],
+        "interval": 10000,
+        "sensitivity": 0.9,
+        "repetitions": 20,
+        "minimalLength": 32,
+        "maximalLength": 36
+      }
+    }
+  },
+  "drivers": [
+    {
+      "id": "test_device",
+      "name": {
+        "en": ""
+      },
+      "class": "other",
+      "capabilities": [],
+      "images": {}
+    }
+  ],
+  "flow": {
+    "triggers": [],
+    "conditions": [],
+    "actions": []
+  },
+  "permissions": [
+    "homey:wireless:433"
+  ]
+}

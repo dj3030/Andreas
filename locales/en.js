@@ -181,5 +181,5 @@ module.exports = {
 			no_settings: 'No settings object. Please try again.',
 			invalid_device: 'The device that was created is invalid. Please try again.',
 		},
-	}
+	},
 };
