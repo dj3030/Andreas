@@ -228,7 +228,8 @@ the same time. Please remove one of both from your config.`,
 		return result;
 	}
 
-	addConfig(config, pathPrefix) {
+	addConfig(config, pathPrefix, configPath) {
+		// config = this.generateSubmoduleConfig(config.submodules, configPath);
 		if (pathPrefix) {
 			config = this.prefixPath(config, pathPrefix);
 		}
@@ -257,6 +258,66 @@ the same time. Please remove one of both from your config.`,
 			{ globalSignal: this.globals.signal, globalDriver: this.globals.driver }
 		);
 	}
+
+	// generateSubmoduleConfig(submodules, configPath) {
+	// 	if (submodules) {
+	// 		if (!Array.isArray(submodules)) {
+	// 			submodules = [submodules];
+	// 		}
+	// 		submodules.append({
+	// 			_root: true,
+	// 			configDir:
+	// 		});
+	// 		submodules.forEach(module => {
+	// 			if (typeof module === 'string') {
+	// 				module = {
+	// 					configDir: module,
+	// 					localesPath: path.join(module, '../locales'),
+	// 					prefix: '',
+	// 				};
+	// 			}
+	// 			const submoduleConfig = require(path.join(configPath, path.join(module.configDir, '.submoduleConfig.js')));
+	// 			const moduleConfig = require(path.join(configPath, path.join(module.configDir, 'config.js')));
+	//
+	// 			traverse(submoduleConfig.deviceClasses).forEach(function nextItem(val) {
+	// 				if (this.level === 1) {
+	// 					const deviceClassKey = (module.prefix || '') + this.key;
+	// 					this.assert(
+	// 						!config.deviceClasses.hasOwnProperty(deviceClassKey),
+	// 						`DeviceClass conflict for ${deviceClassKey
+	// 							}, deviceClass overwritten with lowest level entry. Please use the prefix option to prevent this!`
+	// 					);
+	// 					config.deviceClasses[deviceClassKey] = this.node;
+	// 				} else if (this.isLeaf) {
+	// 					if ((this.parent.key === 'extends' || this.parent.parent.key === 'extends')) {
+	// 						const extendsClassKey = (module.prefix || '') + val;
+	// 						if (config.deviceClasses.hasOwnProperty(extendsClassKey)) {
+	// 							this.update(extendsClassKey);
+	// 						}
+	// 					} else if (this.parent.parent.key === 'viewOrder') {
+	// 						if(this.)
+	// 					} else if (typeof val === 'string' && val.indexOf('./') === 0) {
+	// 						this.update(upath.joinSafe(module.configPath, val));
+	// 					}
+	// 				}
+	// 			});
+	// 		});
+	// 	} else {
+	// 		return config;
+	// 	}
+	// 	const kakuConfig = require('./modules/klikaanklikuit/433_generator/config.js');
+	// 	const deviceClasses = Object.assign(kakuConfig.deviceClasses || {}, kakuConfig.devices || {});
+	// 	Object.keys(deviceClasses).forEach(key => {
+	// 		if (deviceClasses[key].driver) {
+	// 			deviceClasses[key].driver = deviceClasses[key].driver.replace('./', './modules/klikaanklikuit/433_generator/');
+	// 		}
+	// 	});
+	// 	Object.assign(config.views || {}, kakuConfig.views || {});
+	// 	Object.assign(config.deviceClasses || {}, deviceClasses || {});
+	// 	const en = require('./modules/klikaanklikuit/locales/en.json');
+	// 	const nl = require('./modules/klikaanklikuit/locales/nl.json');
+	// 	config.locales = { en, nl };
+	// }
 
 	appendLocales(newLocales) {
 		const locales = traverse(generatorLocales);
@@ -559,5 +620,6 @@ the same time. Please remove one of both from your config.`,
 					console.warn('[WARNING]', message);
 			}
 		}
+		return Boolean(condition);
 	}
 };

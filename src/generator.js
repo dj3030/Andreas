@@ -31,7 +31,7 @@ module.exports = class Generator {
 		this.driverDir = path.join(rootPath, DRIVER_DIR);
 		this.configParser = new ConfigParser(rootPath);
 
-		this.readConfig(path.join(this.moduleDir, 'lib/defaultConfig'), './lib');
+		this.readConfig(path.join(this.moduleDir, 'lib/defaultConfig'), './lib', path.join(this.moduleDir, 'lib'));
 	}
 
 	generate() {
@@ -55,7 +55,7 @@ module.exports = class Generator {
 		const config = require(configPath);
 		relativePath = relativePath || path.relative(path.join(this.root, DRIVER_DIR), path.dirname(configPath));
 
-		this.configParser.addConfig(config, relativePath);
+		this.configParser.addConfig(config, relativePath, path.dirname(configPath));
 	}
 
 	writeConfig(configPath) {

@@ -26,6 +26,6 @@ module.exports = {
 	devices: {
 		test_device: {
 			extends: ['my_signal', 'empty_device'],
-		}
+		},
 	},
 };
