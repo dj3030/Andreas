@@ -10,7 +10,7 @@ You can use Homey to record 433 or 868 signals by calling the following api meth
 The options in the POST data above are the default options. Because you have to be authorized to do calls to the Homey api, 
 the most easy way to execute this post command is by calling it from the homey UI when your logged in, for instance in the 
 chrome developer console: <br/>
-`var recordData; api('POST', '/manager/microcontroller/record', {}, (result) => {console.log('done recording'); recordData = result; });`
+`var recordData; api('POST', '/manager/microcontroller/record', {}, (err, result) => {console.log('done recording'); recordData = result; });`
 
 While Homey is recording you should generate as much data from your device as possible to get the best result. Preferably all
 signals should be the same (for instance the same button on a remote) because this will make the manual stap of decoding the signal
