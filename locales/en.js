@@ -112,7 +112,7 @@ module.exports = {
 			views: {
 				generic_program: {
 					title: 'Put the socket in pairing mode',
-					body: 'Press and hold the program button on your socket for a few seconds to put it in pairing mode, then click next.',
+					body: 'Press the program button on your socket to put it in pairing mode, then click next.',
 				},
 				generic_imitate: {
 					title: 'Copy your remote signal',
