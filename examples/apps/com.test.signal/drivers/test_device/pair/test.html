@@ -1,0 +1,106 @@
+<script>
+var options = {
+	template: '../../433_generator/views/test.html',
+	id: 'test',
+	body: 'Click a button to display the signal data',
+	next: false,
+	previous: false
+};
+Homey.setTitle(__(options.title || ''));
+Homey.emit('init', options.id);
+Homey.on('show_view', function(viewId){
+	Homey.showView(viewId);
+});
+Homey.on('close', function(){
+	Homey.close();
+});
+Homey.on('nextView', function(viewsIds){
+	var viewIndex = viewsIds.indexOf(options.id) + 1;
+	if(viewIndex > 0 && viewIndex < viewsIds.length){
+		Homey.showView(viewsIds[viewIndex]);
+	}
+});
+Homey.on('previousView', function(viewsIds){
+	var viewIndex = viewsIds.indexOf(options.id) - 1;
+	if(viewIndex >= 0){
+		Homey.showView(viewsIds[viewIndex]);
+	}
+});
+function nextView(){
+	if(options.next){
+		Homey.nextView();
+	}else{
+		Homey.emit('next');
+	}
+}
+</script>
+
+<div class="centered-container data-container">
+	<div id="body"><span class="content"></span><pre class="data"></pre></div>
+</div>
+
+<script>
+	var idPrefix = '[data-id="' + options.id + '"] ';
+	$(idPrefix + '#body > .content').html(__(options.body));
+	var dataContainer = $(idPrefix + '#body > .data');
+
+	var markup = {
+		replacer: function(match, pIndent, pKey, pVal, pEnd) {
+			var key = '<span class=json-key>';
+			var val = '<span class=json-value>';
+			var str = '<span class=json-string>';
+			var r = pIndent || '';
+			if (pKey)
+				r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+			if (pVal)
+				r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+			return r + (pEnd || '');
+		},
+		prettyPrint: function(obj) {
+			var jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+			return JSON.stringify(obj, null, 3)
+				.replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+				.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+				.replace(jsonLine, markup.replacer);
+		}
+	};
+
+	Homey.on('frame', function (data) {
+		Homey.emit('set_device', data, function (err, device) {
+			if (err) {
+				if((err.message || err) !== '433_generator.error.invalid_device') {
+					Homey.alert(err.message && err.message.indexOf(' ') === -1 && __(err.message) !== err.message ? __(err.message) : JSON.stringify(err));
+				}
+				return;
+			}
+			delete device.name;
+			delete device.data.driver_id;
+			delete device.data.overridden;
+			dataContainer.html(markup.prettyPrint(device));
+		});
+	});
+</script>
+
+<style>
+	.data-container {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		height: 100%;
+	}
+	pre {
+		background-color: ghostwhite;
+		border: 1px solid silver;
+		padding: 10px 20px;
+		margin: 20px;
+	}
+	.json-key {
+		color: brown;
+	}
+	.json-value {
+		color: navy;
+	}
+	.json-string {
+		color: olive;
+	}
+</style>

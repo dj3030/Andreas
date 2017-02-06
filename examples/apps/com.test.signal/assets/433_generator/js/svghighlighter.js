@@ -24,22 +24,35 @@ jQuery(function ($) {
 		if (svg.parent().is('.no-animation')) {
 			return;
 		}
+
+		Homey.highlight = function (data) {
+			if (data) {
+				console.log('Highlight data', data);
+				setState(svg, data);
+			}
+		};
+
 		if (svg.data('highlight-inited')) {
 			return;
 		}
 		svg.data('highlight-inited', true);
 
 		Homey.on('frame', function (data) {
-			if (device && device.data && device.data.id && device.data.id !== data.id) {
+			if (!data || !data.skipIdCheck && device && device.data && device.data.id && device.data.id !== data.id) {
 				return;
 			}
+			console.log('Received frame', data);
 			setState(svg, data);
 		});
 
+		Homey.on('highlight', function (data) {
+			console.log('Received highlight object', data);
+			setState(svg, data);
+		});
+
+		setState(svg, { initial: 'true' });
 		if (frame) {
 			setState(svg, frame);
-		} else {
-			setState(svg, { initial: 'true' });
 		}
 
 		setClickHandlers(svg);
@@ -55,7 +68,15 @@ jQuery(function ($) {
 				var onClickEvent = onClickRegex.exec(attribute.nodeName);
 				if (onClickEvent) {
 					var data = $elem.attr(onClickEvent[0]);
-					data = data ? JSON.parse(data) : {};
+					try {
+						data = JSON.parse(data);
+					} catch (e) {
+						if (data === 'true' || data === 'false') {
+							data = data === 'true';
+						} else if (!isNaN(Number(data))) {
+							data = Number(data);
+						}
+					}
 					$elem.on('click', function () {
 						Homey.emit(onClickEvent[1], data);
 					});

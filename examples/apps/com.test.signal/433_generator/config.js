@@ -1,8 +1,21 @@
 'use strict';
 
 module.exports = {
+	views: {
+		test: {
+			template: './views/test.html',
+			options: {
+				body: {
+					default: 'Click a button to display the signal data',
+					required: false,
+				},
+				next: false,
+				previous: false,
+			},
+		},
+	},
 	deviceClasses: {
-		my_signal: {
+		test_signal: {
 			signal: {
 				sof: [275, 2640], // Start of frame
 				eof: [275], // End of frame
@@ -21,11 +34,15 @@ module.exports = {
 			driver: './drivers/driver.js',
 			class: 'other',
 			capabilities: [],
+			pair: {
+				viewOrder: ['test'],
+			},
 		},
 	},
 	devices: {
 		test_device: {
-			extends: ['my_signal', 'empty_device'],
+			name: 'test',
+			extends: ['test_signal', 'empty_device'],
 		},
 	},
 };

@@ -2,7 +2,7 @@
 
 const DefaultDriver = require('../../drivers/lib/driver.js');
 
-module.exports = class Doorbell extends DefaultDriver {
+module.exports = class TestDriver extends DefaultDriver {
 
 	init() {
 		super.init.apply(this, arguments);

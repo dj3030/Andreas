@@ -45,11 +45,17 @@
     {
       "id": "test_device",
       "name": {
-        "en": ""
+        "en": "test"
       },
       "class": "other",
       "capabilities": [],
-      "images": {}
+      "images": {},
+      "pair": [
+        {
+          "id": "test",
+          "navigation": {}
+        }
+      ]
     }
   ],
   "flow": {

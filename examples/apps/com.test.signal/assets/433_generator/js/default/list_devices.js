@@ -1,5 +1,5 @@
 var $viewContainer = $('.view-content');
-var $loadingFooter = $('<span>').addClass('devices-list-loading-footer').html(options.loading_footer || '');
+var $loadingFooter = $('<span>').addClass('devices-list-loading-footer').html(__(options.loading_footer) || '');
 $viewContainer.append($loadingFooter);
 
 if (options.loading_title) {
@@ -12,6 +12,6 @@ hideLoading = function () {
 		Homey.setTitle(__(options.title));
 	}
 	$('.devices-list-loading-footer').remove();
-	$viewContainer.append($('<span>').addClass('devices-list-footer').html(options.footer || ''));
+	$viewContainer.append($('<span>').addClass('devices-list-footer').html(__(options.footer) || ''));
 	origHideLoadig();
 };
