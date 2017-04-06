@@ -73,7 +73,7 @@ module.exports = {
 		generic_switch: {
 			views: {
 				generic_choice: {
-					title: 'Kopieer je afstansbediening of programmeer met Homey',
+					title: 'Kopieer je afstandsbediening of programmeer met Homey',
 					body: 'Kies of je het signaal van een gekoppelde afstandsbediening wil kopiëren of dat je het apparaat wil programmeren met een nieuw signaal van Homey.',
 					buttons: {
 						generic_imitate: 'Kopieer je afstandsbediening',
@@ -160,6 +160,7 @@ module.exports = {
 				C: 'Knop C',
 				D: 'Knop D',
 				E: 'Knop E',
+				F: 'Knop F',
 				G: 'Groep Knop',
 				all: 'All Knop',
 				bright: 'Fel Knop',
@@ -184,6 +185,7 @@ module.exports = {
 				C: 'Kanaal C',
 				D: 'Kanaal D',
 				E: 'Kanaal E',
+				F: 'Kanaal F',
 			},
 			units: {
 				1: 'Unit 1',
