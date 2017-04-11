@@ -1,19 +1,10 @@
-#Homey 433 mhz app generator
+# Homey 433 mhz app generator
 This module generates driver files for Homey using a custom config file. The goal of this module is to implement generic 433 features and generate Homey drivers using minimal device specific code.
 
-####**Notice**
+#### **Notice**
 This generator generates files in the `/drivers`, `/drivers/lib` and `/assets/433_generator` folder. All previous files in these folders will be overwritten. Also, this generator overwrites `drivers` and `flows` in the `app.json` config. These actions cannot be undone. Use with caution!
 
-####usage
-
-**NOTICE:[**
-Since this app is not on npm yet you will need to call the `index.js` file directly for now. This can be done by cloning it (preferrably as a sibling to your working project) using:
-`cd ..`
-`git clone https://github.com/athombv/node-homey-433.git`
-`cd my-project`
-and calling it's relative path for example:
-`node ../homey-433/index.js generate`
-**]**
+#### Usage
 
 To install this tool run
 `npm install -g homey-433`
@@ -24,7 +15,7 @@ To use this tool you need to run
 The configDir is relative to the projectDir and is `433_generator` by default. The projectDir is defaulted to the current directory in the command line. To generate and run the project in one command you can call the following command.
 `homey433 generate && athom project --run`
 
-###The config file
+### The config file
 The config file consists of 3 main options. Views, Deviceclasses and devices. These options inherit the defaultConfig settings (included in `/lib/defaultConfig.js`). A sample configuration is given below.
 
 ```javascript
@@ -130,7 +121,7 @@ module.exports = {
 The config file is structured as follows. Devices need configuration for `driver`, `signal`, `name`, `icon`, `images`, `pair`, `capabilities`, `triggers`, `conditions` and `actions`. The configuration of many devices overlaps a device can extend it's config from one or more `deviceClasses`. A deviceclass itself can also extend from other deviceclasses. Because many devices require the same views in the pair wizard `views` are, like deviceClasses, extendable building blocks. A view has a `template` and `viewOptions` configuration. In the `viewOptions` you can define which options the view needs from the device that is using this view or set a default value. The next and previous options are reserved to generate the `navigation` configuration in the resulting `app.json` which will add previous and next buttons in the pair wizard.
 
 
-###Triggers, Conditions and Actions
+### Triggers, Conditions and Actions
 It is also possible to automatically generate the `triggers`, `conditions` and `actions` in the app.json. If these are defined as device options the generator will automatically append the following argument.
 ```javascript
 	{
@@ -201,7 +192,7 @@ actions: [
 ],
 ```
 
-###Drivers
+### Drivers
 
 A driver should rely on the default driver and only implement the features that are custom to a device. To use a driver you will have to implement 3 functions, `generateData`, `payloadToData` and `dataToPayload`. `payloadToData` is called when a payload is received. This function should convert the payload array to a usable javascript object witch at least should contain a id. The id is the unique identifier for the device. For example you can only add 1 remote per address so this will be it's id. But a doorbell is defined by its address, group, channel and unit (or whatever you separate the payload in). `payloadToData` does the opposite. This function should convert the given data object to an bit array that will be send by Homey. `generateData` is used to connect devices without having a transmitter. This function returns a random data object which can be used to control a device. An example of a driver is given below.
 ```javascript
@@ -282,7 +273,7 @@ module.exports = class Socket extends Promax {
 };
 ```
 
-###Svg
+### Svg
 Svg's included in the standard templates will be highlighted by the svghighlighter located in `/assets/433_generator/js/svghighlighter.js` in your project. To configure how to highlight your svg you need to set custom xml attributes. The highlighter will match a received data frame to the custom classes set in the svg. Notice that all custom classes need to be defined in the `<svg>` tag like `xmlns:customAttribute="nonEmptyString"`. By default you can use the `show`, `hide` and `pulse` class. To create custom attributes to which the svghighlighter will listen you will need to define them in the following way: `animation:myClass="not-myClass"`. Where in this instance the svg element will get the class `myClass` when the conditions are met, and get the class `not-myClass` when the condition is not met. Conditions are checked using a regular expression. The initial class can be set by adding `[class]:initial="true"` or `[class]:initial="false"` to the element. Multiple conditions on the same class will act as a `&&`. For example for an element like in the example below
 ```
 <path myClass:state="1" myClass:group="1|2" ...></path>
@@ -366,5 +357,5 @@ svg .no-contact {
 }
 ```
 
-###Debugging
+### Debugging
 If you are not sure that the configuration you made is parsed correctly it is possible to look at the resulting configuration in the following files: `/drivers/config.js`, `/drivers/my_driver/driver.js` and `/drivers/my_driver/pair/view.html`. Notice that changes you make in this file will be overwritten when it is generated again.
