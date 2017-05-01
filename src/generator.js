@@ -9,6 +9,8 @@ const isValidPath = require('is-valid-path');
 const ConfigParser = require('./configParser');
 const beautify = require('js-beautify').js_beautify;
 
+const pjson = require('../package.json');
+
 const CONFIG_FILE = 'config.js';
 const DRIVER_DIR = 'drivers';
 const BEAUTIFY_OPTS = { indent_size: 1, indent_with_tabs: true };
@@ -36,6 +38,7 @@ module.exports = class Generator {
 
 	generate() {
 		this.copyAssets();
+		this.writePackage();
 		this.readConfig(path.join(this.configDir, CONFIG_FILE));
 		this.writeConfig(path.join(this.driverDir, 'config.js'));
 		this.generateFiles();
@@ -49,6 +52,15 @@ module.exports = class Generator {
 		fse.emptyDirSync(assetsPath);
 		fse.copySync(path.join(this.moduleDir, 'lib'), libPath);
 		fse.copySync(path.join(this.moduleDir, 'assets'), assetsPath);
+	}
+
+	writePackage() {
+		const packagePath = path.join(this.driverDir, 'lib');
+		const json = {
+			name: pjson.name,
+			version: pjson.version,
+		};
+		fse.writeJsonSync(path.join(packagePath, 'package.json'), json);
 	}
 
 	readConfig(configPath, relativePath) {
@@ -119,7 +131,7 @@ module.exports = Object.assign(
 					view.prepend = (view.prepend || []).concat(view.options.prepend || []);
 					traverse(view.options).forEach(function nextItem(item) {
 						if (
-							typeof item === 'string' &&	(item.indexOf('./') === 0 || item.indexOf('../') === 0) && isValidPath(item)
+							typeof item === 'string' && (item.indexOf('./') === 0 || item.indexOf('../') === 0) && isValidPath(item)
 						) {
 							const extname = path.extname(item);
 							if (extname === '.js' || extname === '.json' || extname === '') {

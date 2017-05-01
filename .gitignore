@@ -1,2 +1,4 @@
 .idea/
 node_modules
+examples/apps/com.test.signal/assets/433_generator
+examples/apps/com.test.signal/drivers/lib
