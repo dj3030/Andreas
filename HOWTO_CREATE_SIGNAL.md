@@ -78,7 +78,7 @@ but 1 bit of data is now discarded since it is considered to be a part of the st
 
 ### Generating the signal definition
 Now that we know the sof, words and eof of our signal we need to calculate averages of our measurement to use in the signal definition.
-We can calculate the average sof and eof by the following commands (Note, you should replace `%sofl%` and `%eofl%` with the length of the sof/eof):<br/>
+We can calculate the average sof and eof by the following commands (Note, you should replace `%sofl%` and `%eofl%` with the length of the sof/eof, e.g. `var sofl = 2`):<br/>
 `var sofl = %sofl%; var sof = recordData.map(recordEntry => recordEntry.slice( 0, sofl )).reduce((result, recordEntrySof) => recordEntrySof.map((timing, index) => (result[index] || 0) + timing)).map(timing => Math.round(timing / recordData.length)); console.log(JSON.stringify(sof));`<br/>
 `var eofl = %eofl%; var eof = eofl === 0 ? [] : recordData.map(recordEntry => recordEntry.slice(-1 * eofl)).reduce((result, recordEntryEof) => recordEntryEof.map((timing, index) => (result[index] || 0) + timing)).map(timing => Math.round(timing / recordData.length)); console.log(JSON.stringify(eof));`
 
