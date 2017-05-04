@@ -138,7 +138,8 @@ the same time. Please remove one of both from your config.`,
 
 		result.signals = this.defaultSignals;
 		this.signals.forEach((id, signalString) => {
-			result.signals[433][id] = JSON.parse(signalString);
+			const signal = JSON.parse(signalString);
+			result.signals[433][id] = signal;
 			delete result.signals[433][id].id;
 		});
 
@@ -515,6 +516,10 @@ the same time. Please remove one of both from your config.`,
 			result[deviceId] = deepExtend({}, extendedDevices[deviceId]);
 			result[deviceId].driver = result[deviceId].driver || result[deviceId].globalDriver;
 			const signal = result[deviceId].signal || result[deviceId].globalSignal;
+			// Since 1.3.0 signal sensitivity must be <= 0.5 so we quick fix this here if it is higher
+			if (signal.sensitivity && signal.sensitivity > 0.5) {
+				signal.sensitivity = 0.5;
+			}
 			const signalKey = JSON.stringify(signal);
 			const signalId = this.signals.has(signalKey) ? this.signals.get(signalKey) : this.signals.set(
 				signalKey,
