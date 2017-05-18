@@ -5,12 +5,12 @@ A signal definition defines the properties of the signal from your device where 
 of a signal definition are the sof (start of frame), eof (end of frame) and words which together define the data in the signal.
 
 You can use Homey to record 433 or 868 signals by calling the following api method:<br/>
-`POST => '/manager/microcontroller/record', { frequency: '433', time: 10 }`
+`POST => '/manager/rf/record', { frequency: '433', timeout: 10 }`
 
 The options in the POST data above are the default options. Because you have to be authorized to do calls to the Homey api, 
 the most easy way to execute this post command is by calling it from the homey UI when your logged in, for instance in the 
 chrome developer console: <br/>
-`var recordData; api('POST', '/manager/microcontroller/record', {}, (err, result) => {console.log('done recording'); recordData = result; });`
+`var recordData; api('POST', '/manager/rf/record', {}, (err, result) => {console.log('done recording'); recordData = result; });`
 
 While Homey is recording you should generate as much data from your device as possible to get the best result. Preferably all
 signals should be the same (for instance the same button on a remote) because this will make the manual stap of decoding the signal
