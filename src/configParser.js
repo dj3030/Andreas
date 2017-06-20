@@ -18,14 +18,16 @@ fs.readdirSync(path.join(__dirname, '../locales')).forEach(fileName => {
 
 module.exports = class configParser {
 
-	constructor(projectPath) {
+	constructor(configType, projectPath) {
+		this.configType = configType;
 		this.views = {};
 		this.devices = {};
 		this.deviceOrder = [];
 		this.drivers = [];
-		this.defaultSignals = { 433: {} };
+		this.defaultSignals = { 433: {}, 868: {}, ir: {} };
 		this.deviceClasses = {};
 		this.signals = new Map();
+		this.cmdMap = new Map();
 		this.projectRoot = projectPath;
 		this.getLocales();
 	}
@@ -95,11 +97,11 @@ the same time. Please remove one of both from your config.`,
 			}
 		});
 
-		traverse(generatorLocales.en['433_generator'])
+		traverse(generatorLocales.en[`${this.configType}_generator`])
 			.reduce(function nextItem(pathList) {
 				if (this.isLeaf) {
 					const leafPath = this.path;
-					leafPath.unshift('433_generator');
+					leafPath.unshift(`${this.configType}_generator`);
 					pathList.push(leafPath);
 				}
 				return pathList;
@@ -139,8 +141,11 @@ the same time. Please remove one of both from your config.`,
 		result.signals = this.defaultSignals;
 		this.signals.forEach((id, signalString) => {
 			const signal = JSON.parse(signalString);
-			result.signals[433][id] = signal;
-			delete result.signals[433][id].id;
+			if (this.cmdMap.has(id)) {
+				signal.cmds = this.cmdMap.get(id);
+			}
+			result.signals[this.configType][id] = signal;
+			delete result.signals[this.configType][id].id;
 		});
 
 		result.drivers = Object.keys(devices).map(deviceId => {
@@ -525,6 +530,87 @@ the same time. Please remove one of both from your config.`,
 				signalKey,
 				signal.id || crypto.createHash('md5').update(signalKey).digest('hex')
 			).get(signalKey);
+			if (result[deviceId].signal.cmds) {
+				if (!this.cmdMap.has(signalId)) {
+					const cmds = result[deviceId].signal.cmds;
+					const hasTypes = Object.keys(cmds).reduce(
+						(res, cmd) => res && cmds[cmd] && cmds[cmd].constructor && cmds[cmd].constructor.name === 'Object',
+						true
+					);
+					const parseSubtypes = (cmdList) => {
+						return Object.keys(cmdList).reduce(
+							(list, cmd) => {
+								if (cmdList[cmd]) {
+									if (cmdList[cmd].constructor && cmdList[cmd].constructor.name === 'Object') {
+										Object.keys(cmdList[cmd]).forEach((subType) => {
+											if (subType === 'default') {
+												list[cmd] = cmdList[cmd][subType];
+											} else {
+												list[`${cmd}~$${subType}`] = cmdList[cmd][subType];
+											}
+										});
+									} else {
+										list[cmd] = cmdList[cmd];
+									}
+								}
+								return list;
+							},
+							{}
+						);
+					};
+					if (hasTypes) {
+						this.cmdMap.set(
+							signalId,
+							Object.keys(cmds).reduce(
+								(list, type) => {
+									const cmdList = parseSubtypes(cmds[type]);
+									Object.keys(cmdList).forEach((cmd) => {
+										if (type === 'default') {
+											list[cmd] = cmdList[cmd];
+										} else {
+											list[`${type}$~${cmd}`] = cmdList[cmd];
+										}
+									});
+									return list;
+								},
+								{}
+							)
+						);
+					} else {
+						this.cmdMap.set(signalId, parseSubtypes(cmds));
+					}
+					// const firstCmd = result[deviceId].signal.cmds[Object.keys(signal.cmds)[0]];
+					// if (firstCmd && firstCmd.constructor && firstCmd.constructor.name === 'Object') {
+					// 	if (!this.cmdMap.has(signalId)) {
+					// 		const types = Object.keys(result[deviceId].signal.cmds);
+					// 		const intersection = types
+					// 			.reduce((list, type) => list.concat(Object.keys(result[deviceId].signal.cmds[type])), [])
+					// 			.sort()
+					// 			.reduce((res, cmd, i, list) => {
+					// 				if (i && list[i - 1] === cmd && res[res.length - 1] !== cmd) {
+					// 					res.push(cmd);
+					// 				}
+					// 				return res;
+					// 			}, []);
+					// 		console.log('intersection', intersection);
+					// 		const cmdList = types.reduce((list, type) => Object.assign(list, result[deviceId].signal.cmds[type]), {});
+					// 		intersection.forEach(cmd => {
+					// 			delete cmdList[cmd];
+					// 			types.forEach(type => {
+					// 				if (result[deviceId].signal.cmds[type][cmd]) {
+					// 					cmdList[`${cmd}$~${type}`] = result[deviceId].signal.cmds[type][cmd];
+					// 				}
+					// 			});
+					// 		});
+					// 		this.cmdMap.set(signalId, cmdList);
+					// 	}
+					// 	result[deviceId].cmds = Object.keys(this.cmdMap.get(signalId));
+					// } else {
+					// 	result[deviceId].cmds = Object.keys(result[deviceId].signal.cmds);
+					// }
+				}
+				result[deviceId].cmds = Object.keys(this.cmdMap.get(signalId));
+			}
 			result[deviceId].signal = signalId;
 
 			delete result[deviceId].globalDriver;
@@ -540,8 +626,8 @@ the same time. Please remove one of both from your config.`,
 						const view = Object.assign({}, this.views[viewName]);
 						const viewOptions =
 							result[deviceId].pair.viewOptions ?
-							result[deviceId].pair.viewOptions[viewName] || {} :
-							{};
+								result[deviceId].pair.viewOptions[viewName] || {} :
+								{};
 						const optionTypes = view.options || {};
 						Object.assign(optionTypes, { prepend: {}, append: {} });
 

@@ -10,9 +10,10 @@ To install this tool run
 `npm install -g homey-433`
 
 To use this tool you need to run
-`homey433 generate [configDir] [projectDir]`
+`homey433 generate [type] [configDir] [projectDir]`
 
-The configDir is relative to the projectDir and is `433_generator` by default. The projectDir is defaulted to the current directory in the command line. To generate and run the project in one command you can call the following command.
+The type of generator that should be used defaults to `433`. The other option is `ir`.
+The configDir is relative to the projectDir and is `433_generator` by default (when type is `ir` default is `ir_generator`). The projectDir is defaulted to the current directory in the command line. To generate and run the project in one command you can call the following command.
 `homey433 generate && athom project --run`
 
 ### The config file

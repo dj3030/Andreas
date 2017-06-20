@@ -11,6 +11,7 @@ const beautify = require('js-beautify').js_beautify;
 
 const pjson = require('../package.json');
 
+const CONFIG_TYPES = ['ir', '433'];
 const CONFIG_FILE = 'config.js';
 const DRIVER_DIR = 'drivers';
 const BEAUTIFY_OPTS = { indent_size: 1, indent_with_tabs: true };
@@ -18,22 +19,29 @@ const PATH_SEP_REG = new RegExp(path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 
 module.exports = class Generator {
 
-	constructor(rootPath, configPath) {
+	constructor(configType, rootPath, configPath) {
 		rootPath = typeof rootPath === 'string' ? rootPath : process.cwd();
-		configPath = path.join(rootPath, typeof configPath === 'string' ? configPath : '433_generator');
+		configType = configType || '433';
+
+		if (CONFIG_TYPES.indexOf(configType) === -1) {
+			throw new Error(`Invalid config type given: ${configType}. Please choose one of [${CONFIG_TYPES.join(',')}]`);
+		}
+
+		configPath = path.join(rootPath, typeof configPath === 'string' ? configPath : `${configType}_generator`);
 
 		if (!fse.existsSync(rootPath)) throw new Error(`${rootPath} does not exist`);
 		if (!fse.lstatSync(rootPath).isDirectory()) throw new Error(`${rootPath} is not a directory`);
 		if (!fse.existsSync(configPath)) throw new Error(`${configPath} does not exist`);
 		if (!fse.lstatSync(configPath).isDirectory()) throw new Error(`${configPath} is not a directory`);
 
+		this.configType = configType;
 		this.root = rootPath;
 		this.moduleDir = path.join(__dirname, '..');
 		this.configDir = configPath;
 		this.driverDir = path.join(rootPath, DRIVER_DIR);
-		this.configParser = new ConfigParser(rootPath);
+		this.configParser = new ConfigParser(configType, rootPath);
 
-		this.readConfig(path.join(this.moduleDir, 'lib/defaultConfig'), './lib', path.join(this.moduleDir, 'lib'));
+		this.readConfig(path.join(this.moduleDir, 'lib', configType, 'defaultConfig'), `./lib/${configType}`);
 	}
 
 	generate() {
@@ -46,7 +54,7 @@ module.exports = class Generator {
 
 	copyAssets() {
 		const libPath = path.join(this.driverDir, 'lib');
-		const assetsPath = path.join(this.root, 'assets/433_generator');
+		const assetsPath = path.join(this.root, `assets/${this.configType}_generator`);
 		fse.ensureDirSync(this.driverDir);
 		fse.emptyDirSync(libPath);
 		fse.emptyDirSync(assetsPath);
@@ -76,7 +84,7 @@ module.exports = class Generator {
 			configPath,
 			`'use strict';
 /* eslint-disable */
-module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { depth: 10 }), BEAUTIFY_OPTS)};
+module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { depth: 100 }), BEAUTIFY_OPTS)};
 `
 		);
 
@@ -84,7 +92,7 @@ module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { 
 		const appConfigPath = path.join(this.root, 'app.json');
 		const appConfig = fse.readJsonSync(appConfigPath);
 		Object.assign(appConfig, this.configParser.getAppJsonConfig());
-		appConfig.permissions = Array.from(new Set(appConfig.permissions || []).add('homey:wireless:433'));
+		appConfig.permissions = Array.from(new Set(appConfig.permissions || []).add(`homey:wireless:${this.configType}`));
 		fse.writeJsonSync(appConfigPath, appConfig);
 	}
 
@@ -109,7 +117,7 @@ module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { 
 				path.join(driverPath, 'driver.js'),
 				`'use strict';
 /* eslint-disable */
-const config = ${beautify(util.inspect(driverConfig, { depth: 10 }), BEAUTIFY_OPTS)};
+const config = ${beautify(util.inspect(driverConfig, { depth: 100 }), BEAUTIFY_OPTS)};
 const Driver = require(config.driver);
 const driver = new Driver(config);
 module.exports = Object.assign(
@@ -142,7 +150,9 @@ module.exports = Object.assign(
 						}
 					});
 					const viewOptions = Object.assign({}, view, view.options);
-					delete viewOptions.options;
+					if (view.options.options !== viewOptions.options) {
+						delete viewOptions.options;
+					}
 					delete viewOptions.append;
 					delete viewOptions.prepend;
 					const viewTypeReg = /html|css|js$/;

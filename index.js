@@ -10,8 +10,8 @@ commander
 	.version(pjson.version);
 
 commander
-	.command('generate [configPath] [projectPath]')
+	.command('generate [type] [configPath] [projectPath]')
 	.description('generates the config.js file from projectPath/configPath and generates driver files in projectPath')
-	.action((configPath, projectPath) => new Generator(projectPath, configPath).generate());
+	.action((type, configPath, projectPath) => new Generator(type, projectPath, configPath).generate());
 
 commander.parse(process.argv);
