@@ -211,6 +211,7 @@ module.exports = {
 			no_device: 'No device set to pair. Please close the pairing wizard and try again.',
 			no_settings: 'No settings object. Please try again.',
 			invalid_device: 'The device that was created is invalid. Please remove it and try pairing it again.',
+			cannot_register_signal: 'Signal could not be registered. Please reset Homey by pulling the power for 10 seconds and try again.',
 		},
 	},
 };

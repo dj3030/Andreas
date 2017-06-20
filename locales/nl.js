@@ -211,6 +211,7 @@ module.exports = {
 			no_device: 'Er is geen apparaat ingesteld. Sluit de pairing wizard en probeer opnieuw.',
 			no_settings: 'Geen instelling object. Probeer aub opnieuw.',
 			invalid_device: 'Het apparaat dat is aangemaakt is incorrect. Verwijder dit apparaat en probeer opnieuw.',
+			cannot_register_signal: 'Signaal kon niet geregistreerd worden. Reset Homey aub door de stroom voor 10 seconden te onderbreken en probeer vervolgens opnieuw.',
 		},
 	},
 };
