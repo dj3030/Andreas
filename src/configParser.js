@@ -10,7 +10,8 @@ const deepExtend = require('deep-extend');
 const isValidPath = require('is-valid-path');
 
 const generatorLocales = {};
-fs.readdirSync(path.join(__dirname, '../locales')).forEach(fileName => {
+const localesFolder = fs.readdirSync(path.join(__dirname, '../locales'));
+localesFolder.forEach(fileName => {
 	if (path.extname(fileName) === '.js') {
 		generatorLocales[path.basename(fileName, '.js')] = require(path.join(__dirname, '../locales', fileName));
 	}
@@ -29,7 +30,23 @@ module.exports = class configParser {
 		this.signals = new Map();
 		this.cmdMap = new Map();
 		this.projectRoot = projectPath;
+		this.extendGeneratorLocales();
 		this.getLocales();
+	}
+
+	extendGeneratorLocales() {
+		if (localesFolder.indexOf(this.configType)) {
+			const folderPath = path.join(__dirname, '../locales', this.configType);
+			fs.readdirSync(path.join(folderPath)).forEach(fileName => {
+				if (path.extname(fileName) === '.js') {
+					const baseName = path.basename(fileName, '.js');
+					generatorLocales[baseName] = deepExtend(
+						generatorLocales[baseName],
+						{ [`${this.configType}_generator`]: require(path.join(folderPath, fileName)) }
+					);
+				}
+			});
+		}
 	}
 
 	getLocales() {
@@ -46,7 +63,7 @@ module.exports = class configParser {
 		return this.locales;
 	}
 
-	setLocales(localesObject) {
+	setLocales(cmdWhitelist) {
 		const locales = this.getLocales();
 
 		const setLocalePath = (pathArray, localeId) => {
@@ -64,6 +81,8 @@ the same time. Please remove one of both from your config.`,
 				if (target.length === index + 1) {
 					let result = this.getLocale(pathString, locales[localeId]);
 					if (!result || result.slice(-1) === '\u0000') {
+						if (cmdWhitelist && pathArray[pathArray.length - 2] === 'button_labels' &&
+							cmdWhitelist.indexOf(pathArray[pathArray.length - 1]) === -1) return delete prev[curr];
 						result = this.getLocale(pathString, generatorLocales[localeId]);
 						if (result) {
 							result = `${result}\u0000`;
@@ -97,11 +116,12 @@ the same time. Please remove one of both from your config.`,
 			}
 		});
 
-		traverse(generatorLocales.en[`${this.configType}_generator`])
+		const configPrefix = `${this.configType}_generator`;
+		traverse(generatorLocales.en[configPrefix])
 			.reduce(function nextItem(pathList) {
 				if (this.isLeaf) {
 					const leafPath = this.path;
-					leafPath.unshift(`${this.configType}_generator`);
+					leafPath.unshift(configPrefix);
 					pathList.push(leafPath);
 				}
 				return pathList;
@@ -115,7 +135,10 @@ the same time. Please remove one of both from your config.`,
 		const localesPath = path.join(this.projectRoot, 'locales');
 		Object.keys(locales).forEach(localeId => {
 			try {
-				fs.writeFileSync(path.join(localesPath, `${localeId}.json`), JSON.stringify(locales[localeId], null, '\t'));
+				fs.writeFileSync(
+					path.join(localesPath, `${localeId}.json`),
+					`${JSON.stringify(locales[localeId], null, '\t')}\n`
+				);
 			} catch (ignore) { return ignore; }
 		});
 	}
@@ -530,6 +553,9 @@ the same time. Please remove one of both from your config.`,
 				signalKey,
 				signal.id || crypto.createHash('md5').update(signalKey).digest('hex')
 			).get(signalKey);
+
+			result[deviceId].signalDefinition = Object.assign({}, signal);
+
 			if (result[deviceId].signal.cmds) {
 				if (!this.cmdMap.has(signalId)) {
 					const cmds = result[deviceId].signal.cmds;
@@ -537,20 +563,23 @@ the same time. Please remove one of both from your config.`,
 						(res, cmd) => res && cmds[cmd] && cmds[cmd].constructor && cmds[cmd].constructor.name === 'Object',
 						true
 					);
-					const parseSubtypes = (cmdList) => {
+					const parseCmd = typeof result[deviceId].signal.parseCmd === 'function' ?
+						result[deviceId].signal.parseCmd :
+						cmd => cmd;
+					const parseSubtypes = cmdList => {
 						return Object.keys(cmdList).reduce(
 							(list, cmd) => {
 								if (cmdList[cmd]) {
 									if (cmdList[cmd].constructor && cmdList[cmd].constructor.name === 'Object') {
 										Object.keys(cmdList[cmd]).forEach((subType) => {
 											if (subType === 'default') {
-												list[cmd] = cmdList[cmd][subType];
+												list[cmd] = parseCmd(cmdList[cmd][subType]);
 											} else {
-												list[`${cmd}~$${subType}`] = cmdList[cmd][subType];
+												list[`${cmd}~$${subType}`] = parseCmd(cmdList[cmd][subType]);
 											}
 										});
 									} else {
-										list[cmd] = cmdList[cmd];
+										list[cmd] = parseCmd(cmdList[cmd]);
 									}
 								}
 								return list;
@@ -609,10 +638,11 @@ the same time. Please remove one of both from your config.`,
 					// 	result[deviceId].cmds = Object.keys(result[deviceId].signal.cmds);
 					// }
 				}
-				result[deviceId].cmds = Object.keys(this.cmdMap.get(signalId));
+				result[deviceId].signalDefinition.cmds = Object.keys(this.cmdMap.get(signalId));
 			}
 			result[deviceId].signal = signalId;
 
+			delete result[deviceId].signal.parseCmd;
 			delete result[deviceId].globalDriver;
 			delete result[deviceId].globalSignal;
 

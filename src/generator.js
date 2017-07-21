@@ -16,6 +16,7 @@ const CONFIG_FILE = 'config.js';
 const DRIVER_DIR = 'drivers';
 const BEAUTIFY_OPTS = { indent_size: 1, indent_with_tabs: true };
 const PATH_SEP_REG = new RegExp(path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+const STRIP_TYPES_REG = new RegExp(/(.*\$~|~\$.*)/g);
 
 module.exports = class Generator {
 
@@ -54,7 +55,7 @@ module.exports = class Generator {
 
 	copyAssets() {
 		const libPath = path.join(this.driverDir, 'lib');
-		const assetsPath = path.join(this.root, `assets/${this.configType}_generator`);
+		const assetsPath = path.join(this.root, `assets/generator`);
 		fse.ensureDirSync(this.driverDir);
 		fse.emptyDirSync(libPath);
 		fse.emptyDirSync(assetsPath);
@@ -79,16 +80,27 @@ module.exports = class Generator {
 	}
 
 	writeConfig(configPath) {
+		const deviceConfig = this.configParser.getDeviceConfig();
+
 		fse.ensureFileSync(configPath);
 		fse.outputFileSync(
 			configPath,
 			`'use strict';
 /* eslint-disable */
-module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { depth: 100 }), BEAUTIFY_OPTS)};
+module.exports = ${beautify(util.inspect(deviceConfig, { depth: 100, maxArrayLength: null }), BEAUTIFY_OPTS)};
 `
 		);
 
-		this.configParser.setLocales();
+		this.configParser.setLocales(
+			Array.from(
+				Object.values(deviceConfig.devices)
+					.reduce((cmds, device) => {
+						(device.signalDefinition.cmds || []).map(cmd => cmds.add(cmd.replace(STRIP_TYPES_REG, '')));
+						return cmds;
+					}, new Set())
+					.values()
+			)
+		);
 		const appConfigPath = path.join(this.root, 'app.json');
 		const appConfig = fse.readJsonSync(appConfigPath);
 		Object.assign(appConfig, this.configParser.getAppJsonConfig());
@@ -117,7 +129,7 @@ module.exports = ${beautify(util.inspect(this.configParser.getDeviceConfig(), { 
 				path.join(driverPath, 'driver.js'),
 				`'use strict';
 /* eslint-disable */
-const config = ${beautify(util.inspect(driverConfig, { depth: 100 }), BEAUTIFY_OPTS)};
+const config = ${beautify(util.inspect(driverConfig, { depth: 100, maxArrayLength: null }), BEAUTIFY_OPTS)};
 const Driver = require(config.driver);
 const driver = new Driver(config);
 module.exports = Object.assign(
@@ -212,7 +224,7 @@ module.exports = Object.assign(
 							return prev;
 						},
 						`<script>
-var options = ${beautify(util.inspect(viewOptions, { depth: 10 }), BEAUTIFY_OPTS)};
+var options = ${beautify(util.inspect(viewOptions, { depth: 10, maxArrayLength: null }), BEAUTIFY_OPTS)};
 Homey.setTitle(__(options.title || ''));
 Homey.emit('init', options.id);
 Homey.on('show_view', function(viewId){
